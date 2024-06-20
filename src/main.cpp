@@ -1,22 +1,42 @@
 #include <Arduino.h>
+#include <esp_log.h>
+
+
 
 // put function declarations here:
-int myFunction(int, int);
+static const char *TAG = "main";
 
-void setup() {
-  sleep(2);
-  // put your setup code here, to run once:
-  int result = myFunction(2, 3);
+#include <WiFiManager.h>
+WiFiManager wifiManager;
+
+void configModeCallback(WiFiManager *myWiFiManager)
+{
+  ESP_LOGW(TAG, "WifiManager Entered config mode on %s/%s",
+           WiFi.softAPIP(),
+           WiFi.softAPIP().toString());
+}
+void saveConfigCallback () {
+  ESP_LOGI(TAG, "WifiManager data saved");
+}
+
+void setup()
+{
   Serial.begin(115200);
-  Serial.println("BOOOOOOOOOT");
+  esp_log_level_set("*", ESP_LOG_DEBUG);
+
+  sleep(2);
+
+  ESP_LOGI(TAG, "wifiManager attempt to AC");
+  wifiManager.setAPCallback(configModeCallback);
+  wifiManager.setSaveConfigCallback(saveConfigCallback);
+  wifiManager.autoConnect("AP-ESP32-RADIOCAST");
+
+  ESP_LOGI(TAG, "Connected to %s at %s", 
+  wifiManager.getWiFiSSID(),
+  wifiManager.getWiFiHostname());
 }
 
-void loop() {
+void loop()
+{
   // put your main code here, to run repeatedly:
-  
-}
-
-// put function definitions here:
-int myFunction(int x, int y) {
-  return x + y;
 }
