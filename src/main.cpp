@@ -1,6 +1,10 @@
 #include <Arduino.h>
 #include <esp_log.h>
 
+#include "MenuItem.hpp"
+
+MenuItemBT *menuBluetooth = new MenuItemBT();
+
 // #include<button.h>
 // QueueHandle_t button_events = button_init(PIN_BIT(0) | PIN_BIT(1));
 
