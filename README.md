@@ -24,7 +24,7 @@ Vendor | Espressif
 Communication Lib:
 - for option 1 adafruit/Adafruit_SSD1306 but unsuitable for SH1106
 - for SH1106 olikraus/u8g2, potentially compatible with SSD1306 (untested(yet?))
-        * 0°+/*+- Dependence pb with platformio, not yet sorted
+        * strange behaviour from compiler: not finding csrc et cppsrc in u8g2 => Include directive added to platformio.ini
 
 ### option 1 :
 Screen Display Size | 0.91″ 

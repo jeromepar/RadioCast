@@ -3,11 +3,12 @@
 
 #include <cstdint>
 #include <vector>
+#include "U8g2lib.h"
 
 class MenuItem
 {
 public:
-    MenuItem(const char *name);
+    MenuItem(const char *name, U8G2 *u8g2);
 
     void actionB1_shortPress(void){ /*do nothing*/};
     void actionB1_longPress(void){ /*do nothing*/};
@@ -20,12 +21,13 @@ protected:
     char *name;
     const unsigned char*current_icon;
     void updateDisplay(void){ /*do nothing*/};
+    U8G2 *u8g2;
 };
 
 class MenuItemBT : public MenuItem
 {
 public:
-    MenuItemBT(void);
+    MenuItemBT(U8G2 *u8g2);
     void update(void);
 private:    
     typedef enum {
