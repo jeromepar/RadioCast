@@ -4,7 +4,7 @@
 static const char *TAG = "menuItem";
 
 #include <pgmspace.h>
-#include "../ressources/gliphs_50x50"
+#include "../ressources/glyphs_50x50"
 #include <esp32-hal.h>
 #include "defines.h"
 
