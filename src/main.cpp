@@ -81,6 +81,11 @@ void setup()
 
 void loop()
 {
+
+  static uint32_t frame_count=0; //will overflow, no big deal
+  static uint64_t time_last_frame=millis();
+
+
   // put your main code here, to run repeatedly:
 
   /*
@@ -94,7 +99,21 @@ if (xQueueReceive(button_events, &ev, 1000/portTICK_PERIOD_MS)) {
   }
 */
 
+
+
+
   //ESP_LOGD(TAG, "LOOP");
-  menuBluetooth->update();
   //delay(10);
+
+
+  //end of loop managment
+  uint64_t time_end_loop=millis();
+  if ((time_end_loop-time_last_frame)>(uint64_t)(FRAME_DURATION_MS))
+  {
+    frame_count++;
+    time_last_frame=time_end_loop;
+
+    ESP_LOGD(TAG, "Display updated (frame %d at %f))", frame_count,(double)time_end_loop/1000.0);
+    menuBluetooth->updateDisplay(frame_count);
+  }
 }

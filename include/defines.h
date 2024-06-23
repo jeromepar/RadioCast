@@ -6,3 +6,6 @@
 
 #define SCREEN_HEIGHT 64
 #define CENTER_Y(a) (SCREEN_HEIGHT/2-(a)/2)
+
+#define FPS 1.0
+#define FRAME_DURATION_MS (1000.0/FPS)

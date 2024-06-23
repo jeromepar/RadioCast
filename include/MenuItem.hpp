@@ -15,12 +15,13 @@ public:
     void actionB2_shortPress(void){ /*do nothing*/};
     void actionB2_longPress(void){ /*do nothing*/};
     void update(void){ /*do nothing*/};
+    void updateDisplay(uint32_t frame_count){ /*do nothing*/};
+
 
 protected:
     std::vector<const unsigned char*> icon_vector;
     char *name;
     const unsigned char*current_icon;
-    void updateDisplay(void){ /*do nothing*/};
     U8G2 *u8g2;
 };
 
@@ -29,6 +30,7 @@ class MenuItemBT : public MenuItem
 public:
     MenuItemBT(U8G2 *u8g2);
     void update(void);
+    void updateDisplay(uint32_t frame_count);
 private:    
     typedef enum {
         e_bt_unknown,
@@ -37,7 +39,5 @@ private:
     }e_bt_state;
 
     e_bt_state bt_state;
-    void updateDisplay(void);
-
 };
 
