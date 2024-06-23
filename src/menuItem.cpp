@@ -10,7 +10,7 @@ static const char *TAG = "menuItem";
 
 MenuItem::MenuItem(const char *name, U8G2 *u8g2)
 {
-    ESP_LOGD(TAG, "Init MenuItem %s", name);
+    ESP_LOGI(TAG, "Init MenuItem %s", name);
     this->name = const_cast<char *>(name);
     this->icon_vector.clear();
     this->current_icon = NULL;
@@ -18,9 +18,25 @@ MenuItem::MenuItem(const char *name, U8G2 *u8g2)
     this->u8g2 = u8g2;
 }
 
+void MenuItem::setInfo1(const uint8_t *s)
+{
+    this->info1 = (const char *)s;
+    ESP_LOGI(TAG, "Info1 set to %s", this->info1);
+}
+void MenuItem::setInfo2(const uint8_t *s)
+{
+    this->info2 = (const char *)s;
+    ESP_LOGI(TAG, "Info2 set to %s", this->info2);
+}
+void MenuItem::setInfo3(const uint8_t *s)
+{
+    this->info3 = (const char *)s;
+    ESP_LOGI(TAG, "Info3 set to %s", this->info3);
+}
+
 MenuItemBT::MenuItemBT(U8G2 *display) : MenuItem("BT", display)
 {
-    this->bt_state = e_bt_unknown;
+    this->bt_state = e_bt_not_connected;
 
     this->icon_vector.push_back(BT_c_1_bits);
     this->icon_vector.push_back(BT_c_2_bits);
@@ -52,21 +68,46 @@ void MenuItemBT::updateDisplay(uint32_t frame_count)
     u8g2->firstPage();
     do
     {
-        u8g2->drawXBM(-5, CENTER_Y(50), 50, 50, current_icon);
+        u8g2->drawXBM(-5, -3, 50, 50, current_icon);
         u8g2->setFont(u8g2_font_courR14_tr);
-        u8g2->drawStr(45, CENTER_Y(14)-14, "Waiting");
-        switch (nb_dots)
+
+        if (bt_state == e_bt_not_connected)
         {
-        case 2:
-            u8g2->drawStr(45, CENTER_Y(14)+14, "input..");
-            break;
-        case 3:
-            u8g2->drawStr(45, CENTER_Y(14)+14, "input...");
-            break;
-        default:
-            u8g2->drawStr(45, CENTER_Y(14)+14, "input.");
-            break;
+
+            u8g2->drawStr(45, CENTER_Y(14) - 14, "Waiting");
+            switch (nb_dots)
+            {
+            case 2:
+                u8g2->drawStr(45, CENTER_Y(14) + 14, "input..");
+                break;
+            case 3:
+                u8g2->drawStr(45, CENTER_Y(14) + 14, "input...");
+                break;
+            default:
+                u8g2->drawStr(45, CENTER_Y(14) + 14, "input.");
+                break;
+            }
+        }
+        else
+        {
+            char tempstring[80];
+
+            u8g2->setFont(u8g2_font_courR14_tr);
+            info1.toCharArray(tempstring, sizeof(tempstring), 0);
+            u8g2->drawStr(45, 5, tempstring);
+
+            u8g2->setFont(u8g2_font_courR08_tr);
+            info3.toCharArray(tempstring, sizeof(tempstring), 0);
+            u8g2->drawStr(45, CENTER_Y(0)+10, tempstring);
+            info2.toCharArray(tempstring, sizeof(tempstring), 0);
+            u8g2->drawStr(0, CENTER_Y(0) + 10+ 16, tempstring);
         }
 
     } while (u8g2->nextPage());
+}
+
+void MenuItemBT::setConnectionStatus(e_bt_state state)
+{
+    ESP_LOGI(TAG, "setConnectionStatus to %d (0=>not connected/1=>connected)", state);
+    this->bt_state = state;
 }
