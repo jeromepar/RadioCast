@@ -21,7 +21,7 @@ pre-requisite: DualCore for performances, BT, Wifi
 | RAM                   | 320KB         |
 | Vendor                | Espressif     |
 
-![pinout](ressources/ESP-WROOM-32-Dev-Module-pinout-2117679404.jpg)
+<img src="ressources/ESP-WROOM-32-Dev-Module-pinout-2117679404.jpg" width="500">
 
 ## Screen
 
@@ -56,7 +56,7 @@ converting pbg to byte arrays: (https://mischianti.org/images-to-byte-array-onli
 | Protocol              | IIC(GND,VCC,SCL,SDA)  |
 | Module Size           | 27mmx 27mm x 4mm      |
 
-![pinout](ressources/I2C-OLED-Display-Module-Pinout.jpg)
+<img src="ressources/I2C-OLED-Display-Module-Pinout.jpg" width="300">
 from AE: (https://fr.aliexpress.com/item/1005004355547926.html)
 
 *Image generation workflow:*
@@ -71,11 +71,11 @@ Glyphs saved in [glyph file](ressources/glyphs_50x50)
 ## Updating screen
 
 Time management in main loop:
-> IF time elapsed since last display update > Frame period
-> THEN
->     * memorize current time
->     * increment frame count
->     * call updateDisplay
+> IF time elapsed since last display update > Frame period  
+> THEN  
+>     * memorize current time  
+>     * increment frame count  
+>     * call updateDisplay  
 
 drawbacks:
 - no missing frame catch-up
