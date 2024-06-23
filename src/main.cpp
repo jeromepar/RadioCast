@@ -3,8 +3,12 @@
 
 #include "defines.h"
 
-#include <button.h>
-QueueHandle_t button_events = button_init(PIN_BIT(PIN_BUTTON_1) | PIN_BIT(PIN_BUTTON_2));
+#include <AceButton.h>
+using namespace ace_button;
+AceButton button1(PIN_BUTTON_1);
+AceButton button2(PIN_BUTTON_2);
+void handleButtonEvent(AceButton *button, uint8_t eventType,
+                       uint8_t state);
 
 // put function declarations here:
 static const char *TAG = "main";
@@ -28,41 +32,22 @@ void saveConfigCallback()
 U8G2_SH1106_128X64_NONAME_1_SW_I2C u8g2(U8G2_R0, PIN_I2C_CLK, PIN_I2C_SDA);
 
 #include "MenuItem.hpp"
-MenuItemBT *menuBluetooth = new MenuItemBT(&u8g2);
+#define IDX_MENU_BLUETOOTH 0
+#define IDX_MENU_RADIO    1
+#define IDX_MENU_AP       2
+#define IDX_MENU_DEFAULT IDX_MENU_BLUETOOTH
+MenuItemBT menuBT(&u8g2);
 
-#include "AudioTools.h"
-#include "BluetoothA2DPSink.h"
+uint8_t currentMenuIndex = IDX_MENU_BLUETOOTH;
+std::vector<MenuItem *> menus;
 
-// I2SStream i2s;
-BluetoothA2DPSink a2dp_sink = BluetoothA2DPSink();
-
-// Forward declaration of the connection state change callback in bluetooth sink mode
-void a2dp_connection_state_changed(bool state)
+void init_buttons()
 {
-  if (state == false)
-  {
-    menuBluetooth->setConnectionStatus(e_bt_not_connected);
-    menuBluetooth->setInfo1((const uint8_t *)"");
-  }
-  else
-  {
-    menuBluetooth->setConnectionStatus(e_bt_connected);
-    menuBluetooth->setInfo1((const uint8_t *)a2dp_sink.get_connected_source_name());
-  }
-}
-
-void avrc_metadata_callback(uint8_t id, const uint8_t *text)
-{
-  switch (id)
-  {
-  case ESP_AVRC_MD_ATTR_TITLE:
-    menuBluetooth->setInfo2(text);
-    break;
-
-  case ESP_AVRC_MD_ATTR_ARTIST:
-    menuBluetooth->setInfo3(text);
-    break;
-  }
+  pinMode(PIN_BUTTON_1, INPUT_PULLUP);
+  pinMode(PIN_BUTTON_2, INPUT_PULLUP);
+  button1.setEventHandler(handleButtonEvent);
+  button1.setEventHandler(handleButtonEvent);
+  currentMenuIndex=IDX_MENU_DEFAULT;
 }
 
 void init_u8g2()
@@ -84,13 +69,16 @@ void init_u8g2()
   } while (u8g2.nextPage());
 }
 
+void handleButtonEvent(AceButton *, uint8_t, uint8_t);
+
 void setup()
 {
   Serial.begin(115200);
 
   sleep(1);
-  Serial.println("HEY");
   ESP_LOGD(TAG, "Start INIT");
+
+  init_buttons();
 
   // wifiManager.erase(); //suppression des credentials memorises
   // wifiManager.getWiFiIsSaved(); test de WIFI memorise
@@ -119,45 +107,68 @@ void setup()
    cfg.pin_data = 22; // data_out_num
    i2s.begin(cfg);
  */
-  a2dp_sink.set_avrc_metadata_callback(avrc_metadata_callback);
-  a2dp_sink.set_avrc_connection_state_callback(a2dp_connection_state_changed);
-  a2dp_sink.start("BTsync_ESP32");
+
+  menus.push_back(&menuBT);
+  for (auto &m : menus)
+  {
+    m->init();
+  }
 
   ESP_LOGI(TAG, "End INIT");
 }
 
 void loop()
 {
-
+  /* LOOP start */
   static uint32_t frame_count = 0; // will overflow, no big deal
   static uint64_t time_last_frame = millis();
 
-  // put your main code here, to run repeatedly:
+  ESP_LOGV(TAG, "LOOP");
 
-  /*
-if (xQueueReceive(button_events, &ev, 1000/portTICK_PERIOD_MS)) {
-      if ((ev.pin == BUTTON_1) && (ev.event == BUTTON_DOWN)) {
-          // ...
-      }
-      if ((ev.pin == BUTTON_2) && (ev.event == BUTTON_DOWN)) {
-          // ...
-      }
+
+  /* testing area*/
+  static bool test_done = false;
+  if (0&&(test_done == false) && (frame_count == 30))
+  {
+    test_done = true;
+    ESP_LOGW(TAG, "TEST pressed long 2");
+    handleButtonEvent(&button2, AceButton::kEventLongPressed, 0);
   }
-*/
 
-  // ESP_LOGD(TAG, "LOOP");
-  // delay(10);
-
-  // end of loop managment
+  /* end of loop managment -> DISPLAY */
   uint64_t time_end_loop = millis();
   if ((time_end_loop - time_last_frame) > (uint64_t)(FRAME_DURATION_MS))
   {
     frame_count++;
     time_last_frame = time_end_loop;
 
-    ESP_LOGV(TAG, "Display updated (frame %d at %f))", frame_count, (double)time_end_loop / 1000.0);
-    menuBluetooth->updateDisplay(frame_count);
+    ESP_LOGI(TAG, "Display updated (frame %d at %f))", frame_count, (double)time_end_loop / 1000.0);
+    ESP_LOGI(TAG, "Menu activated: %d at %x",currentMenuIndex, menus[currentMenuIndex]);
+    (menus[currentMenuIndex])->updateDisplay(frame_count);
 
-    ESP_LOGD(TAG, "Log level for main %d, for BT_AV %d", esp_log_level_get("main"), esp_log_level_get("BT_AV"));
+  }
+}
+
+void handleButtonEvent(AceButton *button, uint8_t eventType,
+                       uint8_t state)
+{
+
+  if ((button == &button1) && (AceButton::kEventPressed))
+  {
+    ESP_LOGI(TAG, "Button1 pressed");
+  }
+  else if ((button == &button2) && (AceButton::kEventPressed))
+  {
+    ESP_LOGI(TAG, "Button2 pressed");
+    menus[currentMenuIndex]->actionB2_shortPress();
+  }
+  else if ((button == &button1) && (AceButton::kEventLongPressed))
+  {
+    ESP_LOGI(TAG, "Button1 LONG pressed");
+  }
+  else if ((button == &button2) && (AceButton::kEventLongPressed))
+  {
+    ESP_LOGI(TAG, "Button2 LONG pressed");
+    menus[currentMenuIndex]->actionB2_longPress();
   }
 }

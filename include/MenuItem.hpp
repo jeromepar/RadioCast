@@ -9,15 +9,20 @@ class MenuItem
 public:
     MenuItem(const char *name, U8G2 *u8g2);
 
-    void actionB1_shortPress(void) { /*do nothing*/ };
-    void actionB1_longPress(void) { /*do nothing*/ };
-    void actionB2_shortPress(void) { /*do nothing*/ };
-    void actionB2_longPress(void) { /*do nothing*/ };
-    void update(void) { /*do nothing*/ };
-    void updateDisplay(uint32_t frame_count) { /*do nothing*/ };
+    virtual void init(void) { /*do nothing*/ };
+    virtual void actionB1_shortPress(void) { /*do nothing*/ };
+    virtual void actionB1_longPress(void) { /*do nothing*/ };
+    virtual void actionB2_shortPress(void) { /*do nothing*/ };
+    virtual void actionB2_longPress(void) { /*do nothing*/ };
+    virtual void update(void) { /*do nothing*/ };
+    virtual void updateDisplay(uint32_t frame_count) { /*do nothing*/ };
     void setInfo1(const uint8_t *s);
     void setInfo2(const uint8_t *s);
     void setInfo3(const uint8_t *s);
+
+    virtual void reactivate(const uint8_t *s){ /*do nothing*/ };
+    virtual void deactivate(const uint8_t *s){ /*do nothing*/ };
+
 
 protected:
     std::vector<const unsigned char *> icon_vector;
@@ -37,8 +42,10 @@ typedef enum
 class MenuItemBT : public MenuItem
 {
 public:
+    void init(void);
     MenuItemBT(U8G2 *u8g2);
     void setConnectionStatus(e_bt_state state);
+    void actionB2_longPress();
     void update(void);
     void updateDisplay(uint32_t frame_count);
 private:
