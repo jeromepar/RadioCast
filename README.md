@@ -21,7 +21,7 @@ pre-requisite: DualCore for performances, BT, Wifi
 | RAM                   | 320KB         |
 | Vendor                | Espressif     |
 
-![pinout](ressources\ESP-WROOM-32-Dev-Module-pinout-2117679404.jpg)
+![pinout](ressources/ESP-WROOM-32-Dev-Module-pinout-2117679404.jpg)
 
 ## Screen
 
@@ -56,7 +56,7 @@ converting pbg to byte arrays: (https://mischianti.org/images-to-byte-array-onli
 | Protocol              | IIC(GND,VCC,SCL,SDA)  |
 | Module Size           | 27mmx 27mm x 4mm      |
 
-![pinout](ressources\I2C-OLED-Display-Module-Pinout.jpg)
+![pinout](ressources/I2C-OLED-Display-Module-Pinout.jpg)
 from AE: (https://fr.aliexpress.com/item/1005004355547926.html)
 
 *Image generation workflow:*
@@ -64,7 +64,7 @@ from AE: (https://fr.aliexpress.com/item/1005004355547926.html)
 - saved as XMB
 - append PROGMEM to declaration
 
-Glyphs saved in [glyph file](ressources\glyphs_50x50)
+Glyphs saved in [glyph file](ressources/glyphs_50x50)
 
 # Implementation choices
 
