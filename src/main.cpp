@@ -30,15 +30,21 @@ void saveConfigCallback()
 
 #include "U8g2lib.h"
 U8G2_SH1106_128X64_NONAME_1_SW_I2C u8g2(U8G2_R0, PIN_I2C_CLK, PIN_I2C_SDA);
+#include "../ressources/splash.xbm"
 
-#include "MenuItem.hpp"
-#define IDX_MENU_BLUETOOTH 0
-#define IDX_MENU_RADIO    1
-#define IDX_MENU_AP       2
-#define IDX_MENU_DEFAULT IDX_MENU_BLUETOOTH
-MenuItemBT menuBT(&u8g2);
+#include "MenuItemBT.hpp"
+#include "MenuItemWIFI.hpp"
+typedef enum
+{
+  IDX_MENU_BLUETOOTH,
+  IDX_MENU_RADIO,
+  IDX_END_NORMAL_MENU = IDX_MENU_RADIO,
+  IDX_MENU_AP,
+} e_menu_index;
 
-uint8_t currentMenuIndex = IDX_MENU_BLUETOOTH;
+#define IDX_MENU_DEFAULT IDX_MENU_RADIO
+
+e_menu_index currentMenuIndex = IDX_MENU_DEFAULT;
 std::vector<MenuItem *> menus;
 
 void init_buttons()
@@ -47,7 +53,7 @@ void init_buttons()
   pinMode(PIN_BUTTON_2, INPUT_PULLUP);
   button1.setEventHandler(handleButtonEvent);
   button1.setEventHandler(handleButtonEvent);
-  currentMenuIndex=IDX_MENU_DEFAULT;
+  currentMenuIndex = IDX_MENU_DEFAULT;
 }
 
 void init_u8g2()
@@ -65,7 +71,7 @@ void init_u8g2()
   u8g2.firstPage();
   do
   {
-    u8g2.drawStr(0, 0, "Hello World!");
+    u8g2.drawXBM(0, 0, 128, 64, (const uint8_t *)splash);
   } while (u8g2.nextPage());
 }
 
@@ -74,11 +80,17 @@ void handleButtonEvent(AceButton *, uint8_t, uint8_t);
 void setup()
 {
   Serial.begin(115200);
+  init_u8g2();
 
   sleep(1);
   ESP_LOGD(TAG, "Start INIT");
 
   init_buttons();
+
+  // init I2S
+  I2SStream outStream;
+
+
 
   // wifiManager.erase(); //suppression des credentials memorises
   // wifiManager.getWiFiIsSaved(); test de WIFI memorise
@@ -95,40 +107,36 @@ void setup()
            wifiManager.getWiFiHostname());
            */
 
-  init_u8g2();
+  // init menu items (respect e_menu_index order)
+  menus.push_back(new MenuItemBT(&u8g2,outStream));
+  menus.push_back(new MenuItemWIFI(&u8g2,outStream));
 
-  /*
-  This creates a new Bluetooth device with the name BTsync_ESP32 and the output will be sent to the following default I2S pins which need to be connected to an external DAC:
-  */
-  /*
-   auto cfg = i2s.defaultConfig();
-   cfg.pin_bck = 14;  // bck_io_num
-   cfg.pin_ws = 15;   // ws_io_num
-   cfg.pin_data = 22; // data_out_num
-   i2s.begin(cfg);
- */
-
-  menus.push_back(&menuBT);
-  for (auto &m : menus)
-  {
-    m->init();
-  }
+  // start current one
+  menus[currentMenuIndex]->start();
 
   ESP_LOGI(TAG, "End INIT");
 }
 
 void loop()
 {
+  static e_menu_index old_currentMenuIndex = currentMenuIndex;
+
   /* LOOP start */
   static uint32_t frame_count = 0; // will overflow, no big deal
   static uint64_t time_last_frame = millis();
 
   ESP_LOGV(TAG, "LOOP");
 
+  /* test New Mode and housekeeping */
+  if (old_currentMenuIndex != currentMenuIndex)
+  {
+    menus[old_currentMenuIndex]->stop();
+    menus[currentMenuIndex]->start();
+  }
 
   /* testing area*/
   static bool test_done = false;
-  if (0&&(test_done == false) && (frame_count == 30))
+  if (0 && (test_done == false) && (frame_count == 30))
   {
     test_done = true;
     ESP_LOGW(TAG, "TEST pressed long 2");
@@ -143,10 +151,11 @@ void loop()
     time_last_frame = time_end_loop;
 
     ESP_LOGI(TAG, "Display updated (frame %d at %f))", frame_count, (double)time_end_loop / 1000.0);
-    ESP_LOGI(TAG, "Menu activated: %d at %x",currentMenuIndex, menus[currentMenuIndex]);
+    ESP_LOGI(TAG, "Menu activated: %d at %x", currentMenuIndex, menus[currentMenuIndex]);
     (menus[currentMenuIndex])->updateDisplay(frame_count);
-
   }
+
+  old_currentMenuIndex = currentMenuIndex;
 }
 
 void handleButtonEvent(AceButton *button, uint8_t eventType,
@@ -156,6 +165,7 @@ void handleButtonEvent(AceButton *button, uint8_t eventType,
   if ((button == &button1) && (AceButton::kEventPressed))
   {
     ESP_LOGI(TAG, "Button1 pressed");
+    currentMenuIndex=(e_menu_index)((currentMenuIndex+1)%(IDX_END_NORMAL_MENU+1));
   }
   else if ((button == &button2) && (AceButton::kEventPressed))
   {
