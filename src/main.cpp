@@ -12,9 +12,12 @@ void handleButtonEvent(AceButton *button, uint8_t eventType,
 
 // put function declarations here:
 static const char *TAG = "main";
-/*
+
 #include <WiFiManager.h>
 WiFiManager wifiManager;
+
+/*
+
 
 void configModeCallback(WiFiManager *myWiFiManager)
 {
@@ -90,7 +93,11 @@ void setup()
   // init I2S
   I2SStream outStream;
 
+  // init WIFI
+  WiFi.mode(WIFI_STA); // explicitly set mode, esp defaults to STA+AP
 
+  wifiManager.setHostname(WIFI_NAME);
+  wifiManager.setConfigPortalBlocking(false);
 
   // wifiManager.erase(); //suppression des credentials memorises
   // wifiManager.getWiFiIsSaved(); test de WIFI memorise
@@ -108,8 +115,9 @@ void setup()
            */
 
   // init menu items (respect e_menu_index order)
-  menus.push_back(new MenuItemBT(&u8g2,outStream));
-  menus.push_back(new MenuItemWIFI(&u8g2,outStream));
+  menus.push_back(new MenuItem("placeholderBT", &u8g2));
+  // menus.push_back(new MenuItemBT(&u8g2, outStream));
+  menus.push_back(new MenuItemWIFI(&u8g2, outStream, &wifiManager));
 
   // start current one
   menus[currentMenuIndex]->start();
@@ -134,6 +142,8 @@ void loop()
     menus[currentMenuIndex]->start();
   }
 
+  (menus[currentMenuIndex])->update();
+
   /* testing area*/
   static bool test_done = false;
   if (0 && (test_done == false) && (frame_count == 30))
@@ -143,6 +153,9 @@ void loop()
     handleButtonEvent(&button2, AceButton::kEventLongPressed, 0);
   }
 
+  // wifi
+  wifiManager.process(); // usefull when non blocking
+
   /* end of loop managment -> DISPLAY */
   uint64_t time_end_loop = millis();
   if ((time_end_loop - time_last_frame) > (uint64_t)(FRAME_DURATION_MS))
@@ -150,12 +163,13 @@ void loop()
     frame_count++;
     time_last_frame = time_end_loop;
 
-    ESP_LOGI(TAG, "Display updated (frame %d at %f))", frame_count, (double)time_end_loop / 1000.0);
-    ESP_LOGI(TAG, "Menu activated: %d at %x", currentMenuIndex, menus[currentMenuIndex]);
+    ESP_LOGD(TAG, "Display updated (frame %d at %f))", frame_count, (double)time_end_loop / 1000.0);
+    ESP_LOGD(TAG, "Menu activated: %d at %x", currentMenuIndex, menus[currentMenuIndex]);
     (menus[currentMenuIndex])->updateDisplay(frame_count);
   }
 
   old_currentMenuIndex = currentMenuIndex;
+  delay(1);
 }
 
 void handleButtonEvent(AceButton *button, uint8_t eventType,
@@ -165,7 +179,7 @@ void handleButtonEvent(AceButton *button, uint8_t eventType,
   if ((button == &button1) && (AceButton::kEventPressed))
   {
     ESP_LOGI(TAG, "Button1 pressed");
-    currentMenuIndex=(e_menu_index)((currentMenuIndex+1)%(IDX_END_NORMAL_MENU+1));
+    currentMenuIndex = (e_menu_index)((currentMenuIndex + 1) % (IDX_END_NORMAL_MENU + 1));
   }
   else if ((button == &button2) && (AceButton::kEventPressed))
   {

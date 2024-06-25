@@ -20,3 +20,4 @@
 #define FRAME_DURATION_MS (1000.0/FPS)
 
 #define BT_NAME "BT_ESP32"
+#define WIFI_NAME "WLAN_ESP32"

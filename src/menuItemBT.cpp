@@ -33,11 +33,11 @@ void avrc_metadata_callback(uint8_t id, const uint8_t *text)
     switch (id)
     {
     case ESP_AVRC_MD_ATTR_TITLE:
-        bluetooth_instance->setInfo2(text);
+        bluetooth_instance->setInfo3(text);
         break;
 
     case ESP_AVRC_MD_ATTR_ARTIST:
-        bluetooth_instance->setInfo3(text);
+        bluetooth_instance->setInfo2(text);
         break;
     }
 }
@@ -127,10 +127,10 @@ void MenuItemBT::updateDisplay(uint32_t frame_count)
             u8g2->drawStr(45, 5, tempstring);
 
             u8g2->setFont(u8g2_font_courR08_tr);
-            info3.toCharArray(tempstring, sizeof(tempstring), 0);
+            info2.toCharArray(tempstring, sizeof(tempstring), 0);
             u8g2->drawStr(45, CENTER_Y(0) + 2, tempstring);
 
-            info2.toCharArray(tempstring, sizeof(tempstring), 0);
+            info3.toCharArray(tempstring, sizeof(tempstring), 0);
             u8g2->drawStr(0, CENTER_Y(0) + 2 + 16, tempstring);
         }
 

@@ -1,6 +1,8 @@
 #include "MenuItemWIFI.hpp"
 #include <esp_log.h>
 
+#include "WifiManager.h"
+
 static const char *TAG = "menuItemBT";
 
 #include <pgmspace.h>
@@ -13,23 +15,7 @@ static const char *TAG = "menuItemBT";
 
 static MenuItemWIFI *wifi_instance; // so sad, but used for callbacks
 
-// Forward declaration of the connection state change callback in bluetooth sink mode
 /*
-void a2dp_connection_state_changed(bool state)
-{
-    if (state == false)
-    {
-        bluetooth_instance->setConnectionStatus(e_bt_not_connected);
-        bluetooth_instance->setInfo1((const uint8_t *)"");
-    }
-    else
-    {
-        bluetooth_instance->setConnectionStatus(e_bt_connected);
-        bluetooth_instance->setInfo1((const uint8_t *)bluetooth_instance->get_a2dp_sink()->get_connected_source_name());
-    }
-}
-
-
 void avrc_metadata_callback(uint8_t id, const uint8_t *text)
 {
     switch (id)
@@ -45,7 +31,7 @@ void avrc_metadata_callback(uint8_t id, const uint8_t *text)
 }
 */
 
-MenuItemWIFI::MenuItemWIFI(U8G2 *display, I2SStream  &out) : MenuItem("WIFI", display)
+MenuItemWIFI::MenuItemWIFI(U8G2 *display, I2SStream &out, WiFiManager *wifi) : MenuItem("WIFI", display)
 {
     ESP_LOGV(TAG, "MenuItem %s constructor", this->name);
 
@@ -54,21 +40,33 @@ MenuItemWIFI::MenuItemWIFI(U8G2 *display, I2SStream  &out) : MenuItem("WIFI", di
     this->icon_vector.push_back((const unsigned char *)WIFI_sync_3);
     this->icon_vector.push_back((const unsigned char *)WIFI_bits);
     this->current_icon = this->icon_vector[0];
-
+    this->wifi = wifi;
 
     wifi_instance = this; // for callbacks
-
-/*
-    this->a2dp_sink = new BluetoothA2DPSink(out);
-
-    this->a2dp_sink->set_avrc_metadata_callback(avrc_metadata_callback);
-    this->a2dp_sink->set_avrc_connection_state_callback(a2dp_connection_state_changed);*/
+    wifi->setWiFiAutoReconnect(true);
+    wifi->setConnectRetries(10);
 }
 
 void MenuItemWIFI::start(void)
 {
-    this->current_icon = this->icon_vector[0];
-    this->wifi_state = e_wifi_not_connected;
+    previousStatus = WL_NO_SHIELD; // wrong so it updates 1st time
+
+    ESP_LOGI(TAG, "Wifi state before start %d", WiFi.status());
+
+    if (!wifi->getWiFiIsSaved())
+    {
+        ESP_LOGW(TAG, "No credential available - blocked");
+
+        info1 = "No WIFI";
+        info2 = "Registered";
+        info3 = "please enter AP mode";
+    }
+    else
+    {
+        ESP_LOGI(TAG, "Autoconnect start");
+        wifi->autoConnect();
+    }
+    ESP_LOGI(TAG, "Wifi state after start %d", WiFi.status());
 }
 
 void MenuItemWIFI::stop(void)
@@ -78,13 +76,45 @@ void MenuItemWIFI::stop(void)
 void MenuItemWIFI::update()
 {
     ESP_LOGV(TAG, "MenuItem %s update", this->name);
+
+
 }
 void MenuItemWIFI::updateDisplay(uint32_t frame_count)
 {
     ESP_LOGV(TAG, "MenuItem %s updateDisplay", this->name);
 
+    wl_status_t currentStatus = WiFi.status();
+    if (previousStatus != currentStatus)
+    {
+
+        ESP_LOGI(TAG, "Change of wifi status %d->%d", previousStatus, currentStatus);
+
+        switch (currentStatus)
+        {
+        case WL_CONNECTED:
+            info1 = wifi->getWiFiSSID();
+            info2 = "Artist";
+            info3 = "Song";
+            break;
+
+        case WL_CONNECTION_LOST:
+            info1 = wifi->getWiFiSSID();
+            info2 = "Connection Lost";
+            info3 = "";
+            break;
+            
+        default:
+            info1 = "OUPS";
+            info2 = "unexpected";
+            info3 = String(currentStatus);
+            break;
+        }
+
+        previousStatus = currentStatus;
+    }
+
     uint8_t nb_dots = 0;
-    if (wifi_state == e_wifi_connected)
+    if (WiFi.status() == WL_CONNECTED)
     {
         current_icon = icon_vector[3];
     }
@@ -101,40 +131,18 @@ void MenuItemWIFI::updateDisplay(uint32_t frame_count)
         u8g2->drawXBM(-5, -3, 50, 50, current_icon);
         u8g2->setFont(u8g2_font_courR12_tr);
 
-        if (wifi_state == e_wifi_not_connected)
-        {
+        char tempstring[80];
 
-            u8g2->drawStr(50, POSITION_Y(0, 3), "???");
-            u8g2->drawStr(50, POSITION_Y(1, 3), "Connecting ");
+        u8g2->setFont(u8g2_font_courR14_tr);
+        info1.toCharArray(tempstring, sizeof(tempstring), 0);
+        u8g2->drawStr(45, 5, tempstring);
 
-            switch (nb_dots)
-            {
-            case 2:
-                u8g2->drawStr(45, POSITION_Y(2, 3), "   ..");
-                break;
-            case 3:
-                u8g2->drawStr(45, POSITION_Y(2, 3), "   ...");
-                break;
-            default:
-                u8g2->drawStr(45, POSITION_Y(2, 3), "   .");
-                break;
-            }
-        }
-        else
-        {
-            char tempstring[80];
+        u8g2->setFont(u8g2_font_courR08_tr);
+        info2.toCharArray(tempstring, sizeof(tempstring), 0);
+        u8g2->drawStr(45, CENTER_Y(0) + 2, tempstring);
 
-            u8g2->setFont(u8g2_font_courR14_tr);
-            info1.toCharArray(tempstring, sizeof(tempstring), 0);
-            u8g2->drawStr(45, 5, tempstring);
-
-            u8g2->setFont(u8g2_font_courR08_tr);
-            info3.toCharArray(tempstring, sizeof(tempstring), 0);
-            u8g2->drawStr(45, CENTER_Y(0) + 2, tempstring);
-
-            info2.toCharArray(tempstring, sizeof(tempstring), 0);
-            u8g2->drawStr(0, CENTER_Y(0) + 2 + 16, tempstring);
-        }
+        info3.toCharArray(tempstring, sizeof(tempstring), 0);
+        u8g2->drawStr(0, CENTER_Y(0) + 2 + 16, tempstring);
 
     } while (u8g2->nextPage());
 }
