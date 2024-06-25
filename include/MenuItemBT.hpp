@@ -16,7 +16,7 @@ typedef enum
 class MenuItemBT : public MenuItem
 {
 public:
-    MenuItemBT(U8G2 *u8g2, I2SStream  &out);
+    MenuItemBT(U8G2 *u8g2);
 
     void start(void);
     void stop(void);

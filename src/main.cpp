@@ -16,6 +16,8 @@ static const char *TAG = "main";
 #include <WiFiManager.h>
 WiFiManager wifiManager;
 
+
+
 /*
 
 
@@ -90,8 +92,7 @@ void setup()
 
   init_buttons();
 
-  // init I2S
-  I2SStream outStream;
+
 
   // init WIFI
   WiFi.mode(WIFI_STA); // explicitly set mode, esp defaults to STA+AP
@@ -116,8 +117,8 @@ void setup()
 
   // init menu items (respect e_menu_index order)
   menus.push_back(new MenuItem("placeholderBT", &u8g2));
-  // menus.push_back(new MenuItemBT(&u8g2, outStream));
-  menus.push_back(new MenuItemWIFI(&u8g2, outStream, &wifiManager));
+  // menus.push_back(new MenuItemBT(&u8g2));
+  menus.push_back(new MenuItemWIFI(&u8g2, &wifiManager));
 
   // start current one
   menus[currentMenuIndex]->start();

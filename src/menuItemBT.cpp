@@ -42,7 +42,7 @@ void avrc_metadata_callback(uint8_t id, const uint8_t *text)
     }
 }
 
-MenuItemBT::MenuItemBT(U8G2 *display, I2SStream &out) : MenuItem("BT", display)
+MenuItemBT::MenuItemBT(U8G2 *display) : MenuItem("BT", display)
 {
     ESP_LOGV(TAG, "MenuItem %s constructor", this->name);
 
@@ -54,8 +54,18 @@ MenuItemBT::MenuItemBT(U8G2 *display, I2SStream &out) : MenuItem("BT", display)
 
     bluetooth_instance = this; // for callbacks
 
-    this->a2dp_sink = new BluetoothA2DPSink(out);
+    this->a2dp_sink = new BluetoothA2DPSink();
 
+    i2s_pin_config_t pinConfig = {
+        .bck_io_num = PIN_I2S_B_CK,
+        .ws_io_num = PIN_I2S_W_S,
+        .data_out_num = PIN_I2S_D_OUT,
+        .data_in_num = I2S_PIN_NO_CHANGE
+    };
+
+    this->a2dp_sink->set_pin_config(pinConfig);
+
+    this->a2dp_sink->set_avrc_metadata_attribute_mask(ESP_AVRC_MD_ATTR_TITLE | ESP_AVRC_MD_ATTR_ARTIST);
     this->a2dp_sink->set_avrc_metadata_callback(avrc_metadata_callback);
     this->a2dp_sink->set_avrc_connection_state_callback(a2dp_connection_state_changed);
 }

@@ -20,6 +20,6 @@
 
 #define FPS 1.0
 #define FRAME_DURATION_MS (1000.0/FPS)
-
+#define TIMEOUT_BUFFERING_MS   3000 //3s
 #define BT_NAME "BT_ESP32"
 #define WIFI_NAME "WLAN_ESP32"
