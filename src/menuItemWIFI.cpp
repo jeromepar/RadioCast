@@ -12,6 +12,7 @@ static const char *TAG = "menuItemBT";
 #include "../ressources/WIFI.xbm"
 
 #include "defines.h"
+#include "utils.hpp"
 
 static MenuItemWIFI *wifi_instance; // so sad, but used for callbacks
 
@@ -93,7 +94,7 @@ void MenuItemWIFI::updateDisplay(uint32_t frame_count)
         {
         case WL_CONNECTED:
             info1 = wifi->getWiFiSSID();
-            info2 = "Artist";
+            info2 = "Reeeeally long artist name, like ajzehgjklhjkgh";
             info3 = "Song";
             break;
 
@@ -125,24 +126,26 @@ void MenuItemWIFI::updateDisplay(uint32_t frame_count)
     }
     ESP_LOGV(TAG, "MenuItem %s updateDisplay (iter %d)", this->name, frame_count % 3);
 
+
+        char tempstringInfo1[80];
+        char tempstringInfo2[80];
+        char tempstringInfo3[80];
+        info1.toCharArray(tempstringInfo1, sizeof(tempstringInfo1), 0);
+        string2char(info2, tempstringInfo2, 3, frame_count, NB_CHAR_DISPLAYED(45,6/*px wide*/));
+        string2char(info3, tempstringInfo3, 3, frame_count, NB_CHAR_DISPLAYED(0,6/*px wide*/));
+
+
     u8g2->firstPage();
     do
     {
         u8g2->drawXBM(-5, -3, 50, 50, current_icon);
-        u8g2->setFont(u8g2_font_courR12_tr);
-
-        char tempstring[80];
 
         u8g2->setFont(u8g2_font_courR14_tr);
-        info1.toCharArray(tempstring, sizeof(tempstring), 0);
-        u8g2->drawStr(45, 5, tempstring);
+        u8g2->drawStr(45, 5, tempstringInfo1);
 
         u8g2->setFont(u8g2_font_courR08_tr);
-        info2.toCharArray(tempstring, sizeof(tempstring), 0);
-        u8g2->drawStr(45, CENTER_Y(0) + 2, tempstring);
-
-        info3.toCharArray(tempstring, sizeof(tempstring), 0);
-        u8g2->drawStr(0, CENTER_Y(0) + 2 + 16, tempstring);
+        u8g2->drawStr(45, CENTER_Y(0) + 2, tempstringInfo2);
+        u8g2->drawStr(0, CENTER_Y(0) + 2 + 16, tempstringInfo3);
 
     } while (u8g2->nextPage());
 }

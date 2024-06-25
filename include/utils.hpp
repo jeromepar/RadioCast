@@ -1,6 +1,6 @@
 #pragma once
 
 #include <cstdint>
-#include <string>
+#include <WString.h>
 
-void string2char(std::string in, unsigned char *out, int8_t offset_per_iter, uint8_t iter_nb, int8_t nb_visible_chars);
+void string2char(String in, char *out, int8_t offset_per_iter, uint8_t iter_cpt, int8_t nb_visible_chars);
