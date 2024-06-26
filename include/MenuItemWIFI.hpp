@@ -11,6 +11,12 @@
 #include "AudioTools.h"
 #include "BluetoothA2DPSink.h"
 
+typedef struct
+{
+    const char *name;
+    const char *url;
+} station;
+
 class MenuItemWIFI : public MenuItem
 {
 public:
@@ -22,9 +28,14 @@ public:
     void update(void);
     void updateDisplay(uint32_t frame_count);
 
+    void actionB2_shortPress();
+
+
 private:
     WiFiManager *wifi;
     wl_status_t previousStatus;
     // Handle to the RTOS audio task
     TaskHandle_t pAudioTask;
+
 };
+

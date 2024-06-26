@@ -1,5 +1,6 @@
 #include "MenuItemWIFI.hpp"
 #include <esp_log.h>
+#include <string.h>
 
 #include "WifiManager.h"
 
@@ -18,6 +19,9 @@ static MenuItemWIFI *wifi_instance; // so sad, but used for callbacks
 
 Audio outStream(false);
 
+std::vector<station> stations;
+static bool SHARED_cmd_next_station;
+
 /*
 void avrc_metadata_callback(uint8_t id, const uint8_t *text)
 {
@@ -34,14 +38,23 @@ void avrc_metadata_callback(uint8_t id, const uint8_t *text)
 }
 */
 
-//called by Audio
-void audio_showstation(const char *info){
-    wifi_instance->setInfo2((const uint8_t *) info);
-}
-//called by Audio
+// called by Audio
+void audio_showstation(const char *info)
+{
 
-void audio_showstreamtitle(const char *info){
-    wifi_instance->setInfo3((const uint8_t *) info);
+    char *ptr = strstr(info, " (");
+    if (ptr != NULL)
+    {
+        *ptr = 0; // we stop the string before additional metadata
+    }
+    wifi_instance->setInfo2((const uint8_t *)info);
+    wifi_instance->setInfo3("");
+}
+// called by Audio
+
+void audio_showstreamtitle(const char *info)
+{
+    wifi_instance->setInfo3((const uint8_t *)info);
 }
 
 void audioProcessing(void *p)
@@ -49,41 +62,47 @@ void audioProcessing(void *p)
     uint32_t audioBufferFilled_ = 0;
     uint32_t audioBufferSize_ = 0;
     bool streamError;
-    bool newStream = false;
+    bool streamPlaying = false;
     uint64_t timeConnect_; // Store time in order to detect stream errors after connecting
 
-    bool CMDstationChanged_=true;
-
+    uint8_t currentStationIndex = 0;
     while (true)
     {
-        // Process requested station change
-        if (CMDstationChanged_)
+        if (SHARED_cmd_next_station)
         {
+            SHARED_cmd_next_station = false;
+
             ESP_LOGI(TAG, "Stopping previous song/station");
             outStream.stopSong();
 
-            // new connectione exemple
-            ESP_LOGI(TAG, "new connection to radioparadise");
-            const char *streamUrl = "http://stream.radioparadise.com/aac-32";
-            bool success = outStream.connecttohost(streamUrl); // May fail due to wrong host address, socket error or timeout
+            streamPlaying = false;
+            currentStationIndex++;
+        }
+
+        if (streamPlaying == false)
+        {
+            // new connection
+            ESP_LOGI(TAG, "new connection to %s at %s", stations[currentStationIndex].name, stations[currentStationIndex].url);
+            wifi_instance->setInfo3((const uint8_t *)"buffering");
+            wifi_instance->setInfo2((const uint8_t *)stations[currentStationIndex].name);
+            bool success = outStream.connecttohost(stations[currentStationIndex].url); // May fail due to wrong host address, socket error or timeout
             ESP_LOGI(TAG, "Exit code %d", success);
 
-            timeConnect_ = millis();                           // Store time in order to detect stream errors after connecting
+            timeConnect_ = millis(); // Store time in order to detect stream errors after connecting
 
             // Update buffer state variables
             audioBufferFilled_ = outStream.inBufferFilled(); // 0 after connecting
             audioBufferSize_ = outStream.inBufferFree() + audioBufferFilled_;
 
-            newStream = true; //for basic check post-connection
-            CMDstationChanged_=false; //to exit connection loop
+            streamPlaying = true; // for basic check post-connection
         }
 
         // After the buffer has been filled up sufficiently enable audio output
-        if (newStream)
+        if (streamPlaying)
         {
             if (audioBufferFilled_ > 0.9f * audioBufferSize_)
             {
-                ESP_LOGW(TAG, "Unusual occupation of buffer space %d\%", (audioBufferFilled_*100)/audioBufferSize_);
+                // ESP_LOGW(TAG, "Unusual occupation of buffer space %d\%", (audioBufferFilled_ * 100) / audioBufferSize_);
             }
             else
             {
@@ -122,7 +141,21 @@ MenuItemWIFI::MenuItemWIFI(U8G2 *display, WiFiManager *wifi) : MenuItem("WIFI", 
     wifi->setWiFiAutoReconnect(true);
     wifi->setConnectRetries(10);
 
+    stations.push_back({"RadioParadise Main", "http://stream.radioparadise.com/aac-320"});
+    stations.push_back({"France Culture", "http://direct.franceculture.fr/live/franceculture-hifi.aac"});
+    stations.push_back({"FIP", "http://direct.fipradio.fr/live/fip-hifi.aac"});
+    stations.push_back({"Rire&Chanson nouvelle generation", "https://scdn.nrjaudio.fm/adwz1/fr/30405/mp3_128.mp3?origine=fluxradios&aw_0_1st.station=Rire-Chansons-NOUVELLE-GENERATION"});
+    stations.push_back({"RadioParadise Mellow", "http://stream.radioparadise.com/mellow-320"});
+    stations.push_back({"RadioParadise Global", "http://stream.radioparadise.com/global-320"});
+
     this->pAudioTask = NULL;
+
+    /* ini I2S */
+    // outStream.setPinout(PIN_I2S_B_CK, PIN_I2S_W_S, PIN_I2S_D_OUT);
+    outStream.setVolume(21); // 0 to 21
+
+    /* shared variable */
+    SHARED_cmd_next_station = false;
 }
 
 void MenuItemWIFI::start(void)
@@ -157,12 +190,13 @@ void MenuItemWIFI::stop(void)
         vTaskDelete(pAudioTask);
         pAudioTask = NULL;
     }
+    outStream.stopSong();
 }
 
 void MenuItemWIFI::update()
 {
     ESP_LOGV(TAG, "MenuItem %s update", this->name);
-    
+
     wl_status_t currentStatus = WiFi.status();
     if (previousStatus != currentStatus)
     {
@@ -197,7 +231,6 @@ void MenuItemWIFI::updateDisplay(uint32_t frame_count)
 {
     ESP_LOGV(TAG, "MenuItem %s updateDisplay", this->name);
 
-
     uint8_t nb_dots = 0;
     if (WiFi.status() == WL_CONNECTED)
     {
@@ -230,4 +263,10 @@ void MenuItemWIFI::updateDisplay(uint32_t frame_count)
         u8g2->drawStr(0, CENTER_Y(0) + 2 + 16, tempstringInfo3);
 
     } while (u8g2->nextPage());
+}
+
+void MenuItemWIFI::actionB2_shortPress()
+{
+    ESP_LOGI(TAG, "Next station");
+    SHARED_cmd_next_station = true;
 }

@@ -16,8 +16,6 @@ static const char *TAG = "main";
 #include <WiFiManager.h>
 WiFiManager wifiManager;
 
-
-
 /*
 
 
@@ -92,8 +90,6 @@ void setup()
 
   init_buttons();
 
-
-
   // init WIFI
   WiFi.mode(WIFI_STA); // explicitly set mode, esp defaults to STA+AP
 
@@ -147,11 +143,11 @@ void loop()
 
   /* testing area*/
   static bool test_done = false;
-  if (0 && (test_done == false) && (frame_count == 30))
+  if ((test_done == false) && (frame_count == 10))
   {
     test_done = true;
-    ESP_LOGW(TAG, "TEST pressed long 2");
-    handleButtonEvent(&button2, AceButton::kEventLongPressed, 0);
+    ESP_LOGW(TAG, "TEST pressed 2 (%d)", AceButton::kEventPressed);
+    handleButtonEvent(&button2, AceButton::kEventPressed, 0);
   }
 
   // wifi
@@ -176,22 +172,23 @@ void loop()
 void handleButtonEvent(AceButton *button, uint8_t eventType,
                        uint8_t state)
 {
+  ESP_LOGI(TAG, "ButtonHandler (%x/%d)", button, eventType);
 
-  if ((button == &button1) && (AceButton::kEventPressed))
+  if ((button == &button1) && (eventType== AceButton::kEventPressed))
   {
     ESP_LOGI(TAG, "Button1 pressed");
     currentMenuIndex = (e_menu_index)((currentMenuIndex + 1) % (IDX_END_NORMAL_MENU + 1));
   }
-  else if ((button == &button2) && (AceButton::kEventPressed))
+  else if ((button == &button2) && (eventType == AceButton::kEventPressed))
   {
     ESP_LOGI(TAG, "Button2 pressed");
     menus[currentMenuIndex]->actionB2_shortPress();
   }
-  else if ((button == &button1) && (AceButton::kEventLongPressed))
+  else if ((button == &button1) && (eventType == AceButton::kEventLongPressed))
   {
     ESP_LOGI(TAG, "Button1 LONG pressed");
   }
-  else if ((button == &button2) && (AceButton::kEventLongPressed))
+  else if ((button == &button2) && (eventType == AceButton::kEventLongPressed))
   {
     ESP_LOGI(TAG, "Button2 LONG pressed");
     menus[currentMenuIndex]->actionB2_longPress();
