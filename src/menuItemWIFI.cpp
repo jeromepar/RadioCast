@@ -41,14 +41,14 @@ void avrc_metadata_callback(uint8_t id, const uint8_t *text)
 // called by Audio
 void audio_showstation(const char *info)
 {
-
-    char *ptr = strstr(info, " (");
-    if (ptr != NULL)
-    {
-        *ptr = 0; // we stop the string before additional metadata
-    }
-    wifi_instance->setInfo2((const uint8_t *)info);
-    wifi_instance->setInfo3("");
+    /*
+        char *ptr = strstr(info, " (");
+        if (ptr != NULL)
+        {
+            *ptr = 0; // we stop the string before additional metadata
+        }
+        wifi_instance->setInfo2((const uint8_t *)info);*/
+    wifi_instance->setInfo3((const uint8_t *)"");
 }
 // called by Audio
 
@@ -59,6 +59,8 @@ void audio_showstreamtitle(const char *info)
 
 void audioProcessing(void *p)
 {
+    vTaskDelay((FRAME_DURATION_MS + 1) / portTICK_PERIOD_MS); // Let other tasks execute
+
     uint32_t audioBufferFilled_ = 0;
     uint32_t audioBufferSize_ = 0;
     bool streamError;
@@ -83,8 +85,8 @@ void audioProcessing(void *p)
         {
             // new connection
             ESP_LOGI(TAG, "new connection to %s at %s", stations[currentStationIndex].name, stations[currentStationIndex].url);
-            wifi_instance->setInfo3((const uint8_t *)"buffering");
             wifi_instance->setInfo2((const uint8_t *)stations[currentStationIndex].name);
+            wifi_instance->setInfo3((const uint8_t *)"buffering");
             bool success = outStream.connecttohost(stations[currentStationIndex].url); // May fail due to wrong host address, socket error or timeout
             ESP_LOGI(TAG, "Exit code %d", success);
 
@@ -141,17 +143,20 @@ MenuItemWIFI::MenuItemWIFI(U8G2 *display, WiFiManager *wifi) : MenuItem("WIFI", 
     wifi->setWiFiAutoReconnect(true);
     wifi->setConnectRetries(10);
 
-    stations.push_back({"RadioParadise Main", "http://stream.radioparadise.com/aac-320"});
+    stations.push_back({"Radio Paradise", "http://stream.radioparadise.com/aac-320"});
     stations.push_back({"France Culture", "http://direct.franceculture.fr/live/franceculture-hifi.aac"});
     stations.push_back({"FIP", "http://direct.fipradio.fr/live/fip-hifi.aac"});
     stations.push_back({"Rire&Chanson nouvelle generation", "https://scdn.nrjaudio.fm/adwz1/fr/30405/mp3_128.mp3?origine=fluxradios&aw_0_1st.station=Rire-Chansons-NOUVELLE-GENERATION"});
-    stations.push_back({"RadioParadise Mellow", "http://stream.radioparadise.com/mellow-320"});
-    stations.push_back({"RadioParadise Global", "http://stream.radioparadise.com/global-320"});
+    stations.push_back({"Radio Paradise Mellow", "http://stream.radioparadise.com/mellow-320"});
+    stations.push_back({"Radio Paradise Global", "http://stream.radioparadise.com/global-320"});
 
     this->pAudioTask = NULL;
 
     /* ini I2S */
-    // outStream.setPinout(PIN_I2S_B_CK, PIN_I2S_W_S, PIN_I2S_D_OUT);
+    ESP_LOGV(TAG, "Init I2S");
+    outStream.setPinout(PIN_I2S_B_CK, PIN_I2S_W_S, PIN_I2S_D_OUT);
+    ESP_LOGV(TAG, "Pin SET");
+
     outStream.setVolume(21); // 0 to 21
 
     /* shared variable */
@@ -255,10 +260,10 @@ void MenuItemWIFI::updateDisplay(uint32_t frame_count)
     {
         u8g2->drawXBM(-5, -3, 50, 50, current_icon);
 
-        u8g2->setFont(u8g2_font_courR14_tr);
+        u8g2->setFont(u8g2_font_courR14_tf);
         u8g2->drawStr(45, 5, tempstringInfo1);
 
-        u8g2->setFont(u8g2_font_courR08_tr);
+        u8g2->setFont(u8g2_font_courR08_tf);
         u8g2->drawStr(45, CENTER_Y(0) + 2, tempstringInfo2);
         u8g2->drawStr(0, CENTER_Y(0) + 2 + 16, tempstringInfo3);
 

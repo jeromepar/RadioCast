@@ -32,7 +32,7 @@ void saveConfigCallback()
 */
 
 #include "U8g2lib.h"
-U8G2_SH1106_128X64_NONAME_1_SW_I2C u8g2(U8G2_R0, PIN_I2C_CLK, PIN_I2C_SDA);
+U8G2_SH1106_128X64_WINSTAR_F_HW_I2C u8g2(U8G2_R0, PIN_I2C_CLK, PIN_I2C_SDA);
 #include "../ressources/splash.xbm"
 
 #include "MenuItemBT.hpp"
@@ -71,11 +71,19 @@ void init_u8g2()
   u8g2.setFontDirection(0);
   u8g2.setFont(u8g2_font_courR08_tr);
 
+  ESP_LOGI(TAG, "Previous bus clock : %dms",u8g2.getBusClock());
+
+  u8g2.setBusClock(800000);
+
+  uint64_t time_before = micros();
+
   u8g2.firstPage();
   do
   {
     u8g2.drawXBM(0, 0, 128, 64, (const uint8_t *)splash);
   } while (u8g2.nextPage());
+
+  ESP_LOGI(TAG, "time to draw logo : %.3fms", (micros() - time_before) / 1000.0);
 }
 
 void handleButtonEvent(AceButton *, uint8_t, uint8_t);
@@ -162,7 +170,10 @@ void loop()
 
     ESP_LOGD(TAG, "Display updated (frame %d at %f))", frame_count, (double)time_end_loop / 1000.0);
     ESP_LOGD(TAG, "Menu activated: %d at %x", currentMenuIndex, menus[currentMenuIndex]);
+
+    //uint64_t time_before = micros();
     (menus[currentMenuIndex])->updateDisplay(frame_count);
+    //ESP_LOGI(TAG, "time to render : %.3fms", (micros() - time_before) / 1000.0);
   }
 
   old_currentMenuIndex = currentMenuIndex;
@@ -174,7 +185,7 @@ void handleButtonEvent(AceButton *button, uint8_t eventType,
 {
   ESP_LOGI(TAG, "ButtonHandler (%x/%d)", button, eventType);
 
-  if ((button == &button1) && (eventType== AceButton::kEventPressed))
+  if ((button == &button1) && (eventType == AceButton::kEventPressed))
   {
     ESP_LOGI(TAG, "Button1 pressed");
     currentMenuIndex = (e_menu_index)((currentMenuIndex + 1) % (IDX_END_NORMAL_MENU + 1));

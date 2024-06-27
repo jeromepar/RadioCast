@@ -10,7 +10,7 @@ optional case? (cnc)
 
 # Hardware
 
-## ucrontroler
+## microcrontroler: ESP32S3 WROOM (extended ram)
 pre-requisite: DualCore for performances, BT, Wifi
 
 | <!-- -->              | <!-- -->      |
@@ -21,31 +21,14 @@ pre-requisite: DualCore for performances, BT, Wifi
 | RAM                   | 320KB         |
 | Vendor                | Espressif     |
 
-<img align="center" src="ressources/ESP-WROOM-32-Dev-Module-pinout-2117679404.jpg" width="500">
+![pinout](./ressources/ESP-WROOM-32-Dev-Module-pinout-2117679404.jpg)
 
-## Screen
+## Screen: SH1106 128X64 OLED
 
 Communication Lib:
-- for option 1 adafruit/Adafruit_SSD1306 but unsuitable for SH1106
-- for SH1106 olikraus/u8g2, potentially compatible with SSD1306 (untested(yet?))
+-  [olikraus/u8g2](https://github.com/olikraus/u8g2), potentially compatible with SSD1306
         * strange behaviour from compiler: not finding csrc et cppsrc in u8g2 => Include directive added to platformio.ini
 
-### option 1 :
-
-| <!-- -->              | <!-- -->              |
-| -----------           | -----------           |
-| Screen Display Size   | 0.91″                 |
-| Resolution            | 128X32                |
-| Type                  | OLED                  |
-| Voltage               | 3.3V-5V DC            |
-| Driver IC             | SSD1306               |
-| Protocol              | IIC(GND,VCC,SCL,SDA)  |
-
-from AE: (https://fr.aliexpress.com/item/1005004355547926.html)
-converting pbg to byte arrays: (https://mischianti.org/images-to-byte-array-online-converter-cpp-arduino/)
-
-
-### option 2 **USED** : 
 
 | <!-- -->              | <!-- -->              |
 | -----------           | -----------           |
@@ -64,8 +47,6 @@ from AE: (https://fr.aliexpress.com/item/1005004355547926.html)
 - saved as XMB
 - append PROGMEM to declaration
 
-Glyphs saved in [glyph file](ressources/glyphs_50x50)
-
 # Implementation choices
 
 ## Updating screen
@@ -78,37 +59,23 @@ Time management in main loop:
 >     * call updateDisplay  
 
 
-# basic flow
-Démarrage mode radio
+# UI flow
 
--          Lancement Wifi avec connexion non bloquante
+2 functions: 
+- Radio from internet
+- A2DP bluetooth sink
 
--          Choix 1ere radio
+use Button 1 short press to pass from one to another.
+Bluetooth / wifi only activated in their respected mode  
+  
+1 auxiliary function: Button 1 long press enter WIFI AP configuration mode. Allows to:
+- input credential for the Wifi
+- update firmware
 
-Icone Wifi représentative de l’etat
+## Radio
 
-B1 Appui long : portail captif / re_appui long : reboot
+press button2 to cycle between Radio stations. Those are hardcoded
 
-B1 court : next mode
+## Bluetooth sink
 
-B2 Appui court : next station
-
- 
-
-Si passage mode BT
-
-                Wifi off
-
-                BT on
-
- 
-
-                B1 Appui long : deconnection forcée
-
-B1 court : next mode
-
- 
-
-        Icone BT representative de l’etat + string appareil connecté
-
-        B2 Appui court : mute ?
+press button2 to force disconnect

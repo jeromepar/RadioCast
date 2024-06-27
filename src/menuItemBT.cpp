@@ -113,7 +113,7 @@ void MenuItemBT::updateDisplay(uint32_t frame_count)
     do
     {
         u8g2->drawXBM(-5, -3, 50, 50, current_icon);
-        u8g2->setFont(u8g2_font_courR12_tr);
+        u8g2->setFont(u8g2_font_courR12_tf);
 
         if (bt_state == e_bt_not_connected)
         {
@@ -138,10 +138,10 @@ void MenuItemBT::updateDisplay(uint32_t frame_count)
         {
             char tempstring[80];
 
-            u8g2->setFont(u8g2_font_courR14_tr);
+            u8g2->setFont(u8g2_font_courR14_tf);
             u8g2->drawStr(45, 5, tempstringInfo1);
 
-            u8g2->setFont(u8g2_font_courR08_tr);
+            u8g2->setFont(u8g2_font_courR08_tf);
             u8g2->drawStr(45, CENTER_Y(0) + 2, tempstringInfo2);
             u8g2->drawStr(0, CENTER_Y(0) + 2 + 16, tempstringInfo3);
         }
