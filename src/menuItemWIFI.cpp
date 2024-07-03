@@ -21,6 +21,7 @@ Audio outStream(false);
 
 std::vector<station> stations;
 static bool SHARED_cmd_next_station;
+static bool SHARED_cmd_previous_station;
 
 /*
 void avrc_metadata_callback(uint8_t id, const uint8_t *text)
@@ -67,18 +68,42 @@ void audioProcessing(void *p)
     bool streamPlaying = false;
     uint64_t timeConnect_; // Store time in order to detect stream errors after connecting
 
-    uint8_t currentStationIndex = 0;
+    int8_t currentStationIndex = 0;
+
+    uint64_t time_last_cmd = millis();
+
     while (true)
     {
-        if (SHARED_cmd_next_station)
+        if ((SHARED_cmd_next_station || SHARED_cmd_previous_station) && (millis() > (time_last_cmd + COOLDOWN_CMD_MS)))
         {
+            time_last_cmd = millis();
+            if (SHARED_cmd_next_station)
+                currentStationIndex++;
+            if (SHARED_cmd_previous_station)
+                currentStationIndex--;
+
+
+            if (currentStationIndex >= (int8_t )stations.size())
+            {
+                ESP_LOGI(TAG, "High limit");
+                currentStationIndex = 0;
+            }
+            else if (currentStationIndex < 0)
+            {
+                ESP_LOGI(TAG, "Low limit");
+                currentStationIndex = stations.size() - 1;
+            }
+            
+
+            ESP_LOGI(TAG, "new currentStationIndex : %d (mod  %d)", currentStationIndex, stations.size());
+
             SHARED_cmd_next_station = false;
+            SHARED_cmd_previous_station = false;
 
             ESP_LOGI(TAG, "Stopping previous song/station");
             outStream.stopSong();
 
             streamPlaying = false;
-            currentStationIndex++;
         }
 
         if (streamPlaying == false)
@@ -97,6 +122,7 @@ void audioProcessing(void *p)
             audioBufferSize_ = outStream.inBufferFree() + audioBufferFilled_;
 
             streamPlaying = true; // for basic check post-connection
+            outStream.setVolume(16);
         }
 
         // After the buffer has been filled up sufficiently enable audio output
@@ -146,7 +172,7 @@ MenuItemWIFI::MenuItemWIFI(U8G2 *display, WiFiManager *wifi) : MenuItem("WIFI", 
     stations.push_back({"Radio Paradise", "http://stream.radioparadise.com/aac-320"});
     stations.push_back({"France Culture", "http://direct.franceculture.fr/live/franceculture-hifi.aac"});
     stations.push_back({"FIP", "http://direct.fipradio.fr/live/fip-hifi.aac"});
-    stations.push_back({"Rire&Chanson nouvelle generation", "https://scdn.nrjaudio.fm/adwz1/fr/30405/mp3_128.mp3?origine=fluxradios&aw_0_1st.station=Rire-Chansons-NOUVELLE-GENERATION"});
+    stations.push_back({"Rire&Chanson nouvelle generation", "http://185.52.127.162/fr/30405/mp3_128.mp3?origine=fluxradios&adws_out_1=&access_token=38fb0edda3954ad48a099f50110212cd"});
     stations.push_back({"Radio Paradise Mellow", "http://stream.radioparadise.com/mellow-320"});
     stations.push_back({"Radio Paradise Global", "http://stream.radioparadise.com/global-320"});
 
@@ -156,11 +182,11 @@ MenuItemWIFI::MenuItemWIFI(U8G2 *display, WiFiManager *wifi) : MenuItem("WIFI", 
     ESP_LOGV(TAG, "Init I2S");
     outStream.setPinout(PIN_I2S_B_CK, PIN_I2S_W_S, PIN_I2S_D_OUT);
     ESP_LOGV(TAG, "Pin SET");
-
-    outStream.setVolume(21); // 0 to 21
+    outStream.setVolumeSteps(16);
 
     /* shared variable */
     SHARED_cmd_next_station = false;
+    SHARED_cmd_previous_station = false;
 }
 
 void MenuItemWIFI::start(void)
@@ -274,4 +300,10 @@ void MenuItemWIFI::actionB2_shortPress()
 {
     ESP_LOGI(TAG, "Next station");
     SHARED_cmd_next_station = true;
+}
+
+void MenuItemWIFI::actionB2_doublePress()
+{
+    ESP_LOGI(TAG, "Previous station");
+    SHARED_cmd_previous_station = true;
 }

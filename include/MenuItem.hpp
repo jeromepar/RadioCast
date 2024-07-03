@@ -2,7 +2,7 @@
 
 #include <cstdint>
 #include <vector>
-#include "U8g2lib.h"
+#include <U8g2lib.h>
 
 class MenuItem
 {
@@ -19,6 +19,7 @@ public:
     virtual void actionB1_longPress(void) { /*do nothing*/ };
     virtual void actionB2_shortPress(void) { /*do nothing*/ };
     virtual void actionB2_longPress(void) { /*do nothing*/ };
+    virtual void actionB2_doublePress(void) { /*do nothing*/ };
 
     void setInfo1(const uint8_t *s);
     void setInfo2(const uint8_t *s);

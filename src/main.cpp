@@ -3,12 +3,11 @@
 
 #include "defines.h"
 
-#include <AceButton.h>
-using namespace ace_button;
-AceButton button1(PIN_BUTTON_1);
-AceButton button2(PIN_BUTTON_2);
-void handleButtonEvent(AceButton *button, uint8_t eventType,
-                       uint8_t state);
+#include <InterruptButton.h>
+InterruptButton button1(PIN_BUTTON_1, LOW); // Statically allocated button (safest)
+InterruptButton button2(PIN_BUTTON_2, LOW); // Statically allocated button (safest)
+
+void handleButtonEvent(uint8_t pin, events event);
 
 // put function declarations here:
 static const char *TAG = "main";
@@ -52,11 +51,24 @@ std::vector<MenuItem *> menus;
 
 void init_buttons()
 {
-  pinMode(PIN_BUTTON_1, INPUT_PULLUP);
-  pinMode(PIN_BUTTON_2, INPUT_PULLUP);
-  button1.setEventHandler(handleButtonEvent);
-  button1.setEventHandler(handleButtonEvent);
-  currentMenuIndex = IDX_MENU_DEFAULT;
+  InterruptButton::setMode(Mode_Synchronous); // Defaults to Asynchronous (immediate like an ISR and not actioned in main loop)
+
+  button1.bind(Event_KeyPress, []()
+               { handleButtonEvent(PIN_BUTTON_1, Event_KeyPress); });
+  button1.bind(Event_LongKeyPress, []()
+               { handleButtonEvent(PIN_BUTTON_1, Event_LongKeyPress); });
+  button1.bind(Event_DoubleClick, []()
+               { handleButtonEvent(PIN_BUTTON_1, Event_DoubleClick); });
+
+  button2.bind(Event_KeyPress, []()
+               { handleButtonEvent(PIN_BUTTON_2, Event_KeyPress); });
+  button2.bind(Event_LongKeyPress, []()
+               { handleButtonEvent(PIN_BUTTON_2, Event_LongKeyPress); });
+  button2.bind(Event_DoubleClick, []()
+               { handleButtonEvent(PIN_BUTTON_2, Event_DoubleClick); });
+
+  // button2.bind(Event_KeyDown, [](){ESP_LOGI(TAG, "press2");});
+  // button2.bind(Event_KeyUp, [](){ESP_LOGI(TAG, "release2");});
 }
 
 void init_u8g2()
@@ -71,7 +83,7 @@ void init_u8g2()
   u8g2.setFontDirection(0);
   u8g2.setFont(u8g2_font_courR08_tr);
 
-  ESP_LOGI(TAG, "Previous bus clock : %dms",u8g2.getBusClock());
+  ESP_LOGI(TAG, "Previous bus clock : %dms", u8g2.getBusClock());
 
   u8g2.setBusClock(800000);
 
@@ -86,8 +98,6 @@ void init_u8g2()
   ESP_LOGI(TAG, "time to draw logo : %.3fms", (micros() - time_before) / 1000.0);
 }
 
-void handleButtonEvent(AceButton *, uint8_t, uint8_t);
-
 void setup()
 {
   Serial.begin(115200);
@@ -97,6 +107,8 @@ void setup()
   ESP_LOGD(TAG, "Start INIT");
 
   init_buttons();
+
+  currentMenuIndex = IDX_MENU_DEFAULT;
 
   // init WIFI
   WiFi.mode(WIFI_STA); // explicitly set mode, esp defaults to STA+AP
@@ -147,15 +159,18 @@ void loop()
     menus[currentMenuIndex]->start();
   }
 
+  button1.processSyncEvents();
+  button2.processSyncEvents();
+
   (menus[currentMenuIndex])->update();
 
   /* testing area*/
-  static bool test_done = false;
+  static bool test_done = true;
   if ((test_done == false) && (frame_count == 10))
   {
     test_done = true;
-    ESP_LOGW(TAG, "TEST pressed 2 (%d)", AceButton::kEventPressed);
-    handleButtonEvent(&button2, AceButton::kEventPressed, 0);
+    ESP_LOGW(TAG, "TEST pressed 2 (%d)", Event_KeyPress);
+    handleButtonEvent(PIN_BUTTON_2, Event_KeyPress);
   }
 
   // wifi
@@ -165,43 +180,69 @@ void loop()
   uint64_t time_end_loop = millis();
   if ((time_end_loop - time_last_frame) > (uint64_t)(FRAME_DURATION_MS))
   {
+
     frame_count++;
     time_last_frame = time_end_loop;
 
     ESP_LOGD(TAG, "Display updated (frame %d at %f))", frame_count, (double)time_end_loop / 1000.0);
     ESP_LOGD(TAG, "Menu activated: %d at %x", currentMenuIndex, menus[currentMenuIndex]);
 
-    //uint64_t time_before = micros();
+    uint64_t time_before = micros();
     (menus[currentMenuIndex])->updateDisplay(frame_count);
-    //ESP_LOGI(TAG, "time to render : %.3fms", (micros() - time_before) / 1000.0);
+    ESP_LOGD(TAG, "time to render : %.3fms", (micros() - time_before) / 1000.0);
   }
 
   old_currentMenuIndex = currentMenuIndex;
   delay(1);
 }
 
-void handleButtonEvent(AceButton *button, uint8_t eventType,
-                       uint8_t state)
+void handleButtonEvent(uint8_t pin, events eventType)
 {
-  ESP_LOGI(TAG, "ButtonHandler (%x/%d)", button, eventType);
 
-  if ((button == &button1) && (eventType == AceButton::kEventPressed))
+  switch (pin)
   {
-    ESP_LOGI(TAG, "Button1 pressed");
-    currentMenuIndex = (e_menu_index)((currentMenuIndex + 1) % (IDX_END_NORMAL_MENU + 1));
-  }
-  else if ((button == &button2) && (eventType == AceButton::kEventPressed))
-  {
-    ESP_LOGI(TAG, "Button2 pressed");
-    menus[currentMenuIndex]->actionB2_shortPress();
-  }
-  else if ((button == &button1) && (eventType == AceButton::kEventLongPressed))
-  {
-    ESP_LOGI(TAG, "Button1 LONG pressed");
-  }
-  else if ((button == &button2) && (eventType == AceButton::kEventLongPressed))
-  {
-    ESP_LOGI(TAG, "Button2 LONG pressed");
-    menus[currentMenuIndex]->actionB2_longPress();
+  case PIN_BUTTON_1:
+    switch (eventType)
+    {
+    case Event_KeyPress:
+      ESP_LOGI(TAG, "----------- B1 clicked");
+      currentMenuIndex = (e_menu_index)((currentMenuIndex + 1) % (IDX_END_NORMAL_MENU + 1));
+
+      break;
+    case Event_DoubleClick:
+      ESP_LOGI(TAG, "----------- B1 Doubleclicked");
+
+      break;
+    case Event_LongKeyPress:
+      ESP_LOGI(TAG, "----------- B1 long click");
+      break;
+    default:
+      /* do nothing */
+      break;
+    }
+    break;
+  case PIN_BUTTON_2:
+    switch (eventType)
+    {
+    case Event_KeyPress:
+      ESP_LOGI(TAG, "----------- B2 clicked");
+      menus[currentMenuIndex]->actionB2_shortPress();
+
+      break;
+    case Event_DoubleClick:
+      ESP_LOGI(TAG, "----------- B2 Doubleclicked");
+      menus[currentMenuIndex]->actionB2_doublePress();
+
+      break;
+    case Event_LongKeyPress:
+      ESP_LOGI(TAG, "----------- B2 long click");
+      menus[currentMenuIndex]->actionB2_longPress();
+
+      break;
+    default:
+      /* do nothing */
+      break;
+    }
+    break;
   }
 }

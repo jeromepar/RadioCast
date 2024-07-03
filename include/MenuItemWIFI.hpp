@@ -4,12 +4,12 @@
 #include <vector>
 #include <WiFiManager.h>
 
-#include "U8g2lib.h"
+#include <U8g2lib.h>
 #include "MenuItem.hpp"
 
 #include <Audio.h>
-#include "AudioTools.h"
-#include "BluetoothA2DPSink.h"
+#include <AudioTools.h>
+#include <BluetoothA2DPSink.h>
 
 typedef struct
 {
@@ -29,6 +29,7 @@ public:
     void updateDisplay(uint32_t frame_count);
 
     void actionB2_shortPress();
+    void actionB2_doublePress();
 
 
 private:

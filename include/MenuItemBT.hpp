@@ -2,11 +2,11 @@
 
 #include <cstdint>
 #include <vector>
-#include "U8g2lib.h"
-#include "MenuItem.hpp"
+#include <U8g2lib.h>
+#include <MenuItem.hpp>
 
-#include "AudioTools.h"
-#include "BluetoothA2DPSink.h"
+#include <AudioTools.h>
+#include <BluetoothA2DPSink.h>
 
 typedef enum
 {
