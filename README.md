@@ -41,6 +41,7 @@ Communication Lib:
 | Module Size           | 27mmx 27mm x 4mm      |
 
 <img align="center" src="ressources/I2C-OLED-Display-Module-Pinout.jpg" width="300">
+
 from AE: [link](https://fr.aliexpress.com/item/1005004355547926.html)
 
 *Image generation workflow:*
@@ -58,6 +59,7 @@ from AE: [link](https://fr.aliexpress.com/item/1005004355547926.html)
 | Protocol              | I2S(GND,VCC,DIN,BCK,LCK)  **SCK tied to GND** |
 
 <img align="center" src="ressources/DAC.jpg" width="300">
+
 from AE: [link](https://fr.aliexpress.com/item/1005005393398013.html)
 
 

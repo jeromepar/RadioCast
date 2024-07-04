@@ -12,9 +12,6 @@ void handleButtonEvent(uint8_t pin, events event);
 // put function declarations here:
 static const char *TAG = "main";
 
-#include <WiFiManager.h>
-WiFiManager wifiManager;
-
 /*
 
 
@@ -110,12 +107,6 @@ void setup()
 
   currentMenuIndex = IDX_MENU_DEFAULT;
 
-  // init WIFI
-  WiFi.mode(WIFI_STA); // explicitly set mode, esp defaults to STA+AP
-
-  wifiManager.setHostname(WIFI_NAME);
-  wifiManager.setConfigPortalBlocking(false);
-
   // wifiManager.erase(); //suppression des credentials memorises
   // wifiManager.getWiFiIsSaved(); test de WIFI memorise
 
@@ -134,7 +125,7 @@ void setup()
   // init menu items (respect e_menu_index order)
   menus.push_back(new MenuItem("placeholderBT", &u8g2));
   // menus.push_back(new MenuItemBT(&u8g2));
-  menus.push_back(new MenuItemWIFI(&u8g2, &wifiManager));
+  menus.push_back(new MenuItemWIFI(&u8g2));
 
   // start current one
   menus[currentMenuIndex]->start();
@@ -144,6 +135,7 @@ void setup()
 
 void loop()
 {
+
   static e_menu_index old_currentMenuIndex = currentMenuIndex;
 
   /* LOOP start */
@@ -152,15 +144,18 @@ void loop()
 
   ESP_LOGV(TAG, "LOOP");
 
+  /* first process inputs */
+  button1.processSyncEvents();
+  button2.processSyncEvents();
+
   /* test New Mode and housekeeping */
   if (old_currentMenuIndex != currentMenuIndex)
   {
+    ESP_LOGI(TAG, "Quitting menu index (%d)", old_currentMenuIndex);
     menus[old_currentMenuIndex]->stop();
+    ESP_LOGI(TAG, "Init menu index (%d)", currentMenuIndex);
     menus[currentMenuIndex]->start();
   }
-
-  button1.processSyncEvents();
-  button2.processSyncEvents();
 
   (menus[currentMenuIndex])->update();
 
@@ -172,9 +167,6 @@ void loop()
     ESP_LOGW(TAG, "TEST pressed 2 (%d)", Event_KeyPress);
     handleButtonEvent(PIN_BUTTON_2, Event_KeyPress);
   }
-
-  // wifi
-  wifiManager.process(); // usefull when non blocking
 
   /* end of loop managment -> DISPLAY */
   uint64_t time_end_loop = millis();
@@ -207,6 +199,7 @@ void handleButtonEvent(uint8_t pin, events eventType)
     case Event_KeyPress:
       ESP_LOGI(TAG, "----------- B1 clicked");
       currentMenuIndex = (e_menu_index)((currentMenuIndex + 1) % (IDX_END_NORMAL_MENU + 1));
+      ESP_LOGI(TAG, "new menu %d", currentMenuIndex);
 
       break;
     case Event_DoubleClick:

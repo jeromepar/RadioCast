@@ -82,8 +82,7 @@ void audioProcessing(void *p)
             if (SHARED_cmd_previous_station)
                 currentStationIndex--;
 
-
-            if (currentStationIndex >= (int8_t )stations.size())
+            if (currentStationIndex >= (int8_t)stations.size())
             {
                 ESP_LOGI(TAG, "High limit");
                 currentStationIndex = 0;
@@ -93,7 +92,6 @@ void audioProcessing(void *p)
                 ESP_LOGI(TAG, "Low limit");
                 currentStationIndex = stations.size() - 1;
             }
-            
 
             ESP_LOGI(TAG, "new currentStationIndex : %d (mod  %d)", currentStationIndex, stations.size());
 
@@ -154,7 +152,7 @@ void audioProcessing(void *p)
     }
 }
 
-MenuItemWIFI::MenuItemWIFI(U8G2 *display, WiFiManager *wifi) : MenuItem("WIFI", display)
+MenuItemWIFI::MenuItemWIFI(U8G2 *display) : MenuItem("WIFI", display)
 {
     ESP_LOGV(TAG, "MenuItem %s constructor", this->name);
 
@@ -163,11 +161,9 @@ MenuItemWIFI::MenuItemWIFI(U8G2 *display, WiFiManager *wifi) : MenuItem("WIFI", 
     this->icon_vector.push_back((const unsigned char *)WIFI_sync_3);
     this->icon_vector.push_back((const unsigned char *)WIFI_bits);
     this->current_icon = this->icon_vector[0];
-    this->wifi = wifi;
+    this->wifi = NULL;
 
     wifi_instance = this; // for callbacks
-    wifi->setWiFiAutoReconnect(true);
-    wifi->setConnectRetries(10);
 
     stations.push_back({"Radio Paradise", "http://stream.radioparadise.com/aac-320"});
     stations.push_back({"France Culture", "http://direct.franceculture.fr/live/franceculture-hifi.aac"});
@@ -191,6 +187,26 @@ MenuItemWIFI::MenuItemWIFI(U8G2 *display, WiFiManager *wifi) : MenuItem("WIFI", 
 
 void MenuItemWIFI::start(void)
 {
+    if (this->wifi == NULL)
+    {
+        ESP_LOGI(TAG, "WiFiManager creation");
+        this->wifi = new WiFiManager();
+    }
+    else
+    {
+        ESP_LOGE(TAG, "WifiManager allready instancied");
+    }
+
+    ESP_LOGI(TAG, "WiFiManager init");
+
+    // init WIFI
+    wifi->setHostname(WIFI_NAME);
+    wifi->setConfigPortalBlocking(false);
+    wifi->setWiFiAutoReconnect(true);
+    wifi->setConnectRetries(10);
+
+    WiFi.mode(WIFI_STA); // explicitly set mode, esp defaults to STA+AP
+
     previousStatus = WL_NO_SHIELD; // wrong so it updates 1st time
 
     ESP_LOGI(TAG, "Wifi state before start %d", WiFi.status());
@@ -216,17 +232,28 @@ void MenuItemWIFI::start(void)
 
 void MenuItemWIFI::stop(void)
 {
+    ESP_LOGI(TAG, "stopping song");
+    outStream.stopSong();
+
+    ESP_LOGI(TAG, "audio Task deletion");
     if (pAudioTask != NULL)
     {
         vTaskDelete(pAudioTask);
         pAudioTask = NULL;
     }
-    outStream.stopSong();
+    ESP_LOGI(TAG, "WiFiManager deletion");
+
+    wifi->~WiFiManager();
+    wifi = NULL;
+
+    WiFi.mode(WIFI_OFF);
 }
 
 void MenuItemWIFI::update()
 {
     ESP_LOGV(TAG, "MenuItem %s update", this->name);
+
+    wifi->process(); // usefull when non blocking
 
     wl_status_t currentStatus = WiFi.status();
     if (previousStatus != currentStatus)

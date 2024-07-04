@@ -72,6 +72,7 @@ MenuItemBT::MenuItemBT(U8G2 *display) : MenuItem("BT", display)
 
 void MenuItemBT::start(void)
 {
+    //btStop(); /  btStart();
     this->current_icon = this->icon_vector[0];
     this->bt_state = e_bt_not_connected;
     this->a2dp_sink->start(BT_NAME);
