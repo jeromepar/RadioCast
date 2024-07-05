@@ -33,6 +33,7 @@ U8G2_SH1106_128X64_WINSTAR_F_HW_I2C u8g2(U8G2_R0, PIN_I2C_CLK, PIN_I2C_SDA);
 
 #include "MenuItemBT.hpp"
 #include "MenuItemWIFI.hpp"
+#include "MenuItemWIFIAP.hpp"
 typedef enum
 {
   IDX_MENU_BLUETOOTH,
@@ -41,7 +42,7 @@ typedef enum
   IDX_MENU_AP,
 } e_menu_index;
 
-#define IDX_MENU_DEFAULT IDX_MENU_RADIO
+#define IDX_MENU_DEFAULT IDX_MENU_BLUETOOTH
 
 e_menu_index currentMenuIndex = IDX_MENU_DEFAULT;
 std::vector<MenuItem *> menus;
@@ -108,24 +109,12 @@ void setup()
   currentMenuIndex = IDX_MENU_DEFAULT;
 
   // wifiManager.erase(); //suppression des credentials memorises
-  // wifiManager.getWiFiIsSaved(); test de WIFI memorise
-
-  /*
-    ESP_LOGE(TAG, "wifiManager attempt to AC");
-
-  wifiManager.setAPCallback(configModeCallback);
-  wifiManager.setSaveConfigCallback(saveConfigCallback);
-  wifiManager.autoConnect("AP-ESP32-RADIOCAST");
-
-  ESP_LOGI(TAG, "Connected to %s at %s",
-           wifiManager.getWiFiSSID(),
-           wifiManager.getWiFiHostname());
-           */
 
   // init menu items (respect e_menu_index order)
-  menus.push_back(new MenuItem("placeholderBT", &u8g2));
-  // menus.push_back(new MenuItemBT(&u8g2));
+  menus.push_back(new MenuItemBT(&u8g2));
+  //menus.push_back(new MenuItem("placeholderWifi", &u8g2));
   menus.push_back(new MenuItemWIFI(&u8g2));
+  menus.push_back(new MenuItemWIFIAP(&u8g2));
 
   // start current one
   menus[currentMenuIndex]->start();
@@ -208,6 +197,7 @@ void handleButtonEvent(uint8_t pin, events eventType)
       break;
     case Event_LongKeyPress:
       ESP_LOGI(TAG, "----------- B1 long click");
+      currentMenuIndex = IDX_MENU_AP;
       break;
     default:
       /* do nothing */

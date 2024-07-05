@@ -54,33 +54,45 @@ MenuItemBT::MenuItemBT(U8G2 *display) : MenuItem("BT", display)
 
     bluetooth_instance = this; // for callbacks
 
-    this->a2dp_sink = new BluetoothA2DPSink();
+    this->a2dp_sink = NULL;
+}
+
+void MenuItemBT::start(void)
+{
+    if (this->a2dp_sink == NULL)
+    {
+        ESP_LOGI(TAG, "A2DPsink creation");
+        this->a2dp_sink = new BluetoothA2DPSink();
+    }
+    else
+    {
+        ESP_LOGE(TAG, "A2DPsink allready instancied");
+    }
+    // btStop(); /  btStart();
+    this->current_icon = this->icon_vector[0];
+    this->bt_state = e_bt_not_connected;
 
     i2s_pin_config_t pinConfig = {
         .bck_io_num = PIN_I2S_B_CK,
         .ws_io_num = PIN_I2S_W_S,
         .data_out_num = PIN_I2S_D_OUT,
-        .data_in_num = I2S_PIN_NO_CHANGE
-    };
+        .data_in_num = I2S_PIN_NO_CHANGE};
 
     this->a2dp_sink->set_pin_config(pinConfig);
 
     this->a2dp_sink->set_avrc_metadata_attribute_mask(ESP_AVRC_MD_ATTR_TITLE | ESP_AVRC_MD_ATTR_ARTIST);
     this->a2dp_sink->set_avrc_metadata_callback(avrc_metadata_callback);
     this->a2dp_sink->set_avrc_connection_state_callback(a2dp_connection_state_changed);
-}
 
-void MenuItemBT::start(void)
-{
-    //btStop(); /  btStart();
-    this->current_icon = this->icon_vector[0];
-    this->bt_state = e_bt_not_connected;
     this->a2dp_sink->start(BT_NAME);
 }
 
 void MenuItemBT::stop(void)
 {
     this->a2dp_sink->stop();
+
+    this->a2dp_sink->~BluetoothA2DPSink();
+    this->a2dp_sink = NULL;
 }
 
 void MenuItemBT::update()
@@ -107,8 +119,8 @@ void MenuItemBT::updateDisplay(uint32_t frame_count)
     char tempstringInfo2[80];
     char tempstringInfo3[80];
     info1.toCharArray(tempstringInfo1, sizeof(tempstringInfo1), 0);
-    string2char(info2, tempstringInfo2, 3, frame_count, NB_CHAR_DISPLAYED(45, 6 /*px wide*/));
-    string2char(info3, tempstringInfo3, 3, frame_count, NB_CHAR_DISPLAYED(0, 6 /*px wide*/));
+    string2char(info2, tempstringInfo2, SCROLLING_SPEED, frame_count, NB_CHAR_DISPLAYED(45, 6 /*px wide*/));
+    string2char(info3, tempstringInfo3, SCROLLING_SPEED, frame_count, NB_CHAR_DISPLAYED(0, 6 /*px wide*/));
 
     u8g2->firstPage();
     do

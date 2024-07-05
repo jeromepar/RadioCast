@@ -9,7 +9,6 @@
 
 #include <Audio.h>
 #include <AudioTools.h>
-#include <BluetoothA2DPSink.h>
 
 typedef struct
 {

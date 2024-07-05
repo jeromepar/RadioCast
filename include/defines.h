@@ -17,6 +17,8 @@
 #define CENTER_Y(a) (SCREEN_HEIGHT/2-(a)/2)
 #define POSITION_Y(idx,nb_lines) (((float)(SCREEN_HEIGHT))/(float)(nb_lines)*(float)(idx))
 #define NB_CHAR_DISPLAYED(offset, font_sz) (int(float(SCREEN_WIDTH-offset)/(font_sz))+1)
+#define SCROLLING_SPEED       1 //char number
+
 
 #define COOLDOWN_CMD_MS     1
 
@@ -24,4 +26,4 @@
 #define FRAME_DURATION_MS (1000.0/FPS)
 #define TIMEOUT_BUFFERING_MS   3000 //3s
 #define BT_NAME "BT_ESP32"
-#define WIFI_NAME "WLAN_ESP32"
+#define WIFI_NAME "AP_ESP32"

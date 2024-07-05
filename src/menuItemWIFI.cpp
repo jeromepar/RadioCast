@@ -305,8 +305,8 @@ void MenuItemWIFI::updateDisplay(uint32_t frame_count)
     char tempstringInfo2[80];
     char tempstringInfo3[80];
     info1.toCharArray(tempstringInfo1, sizeof(tempstringInfo1), 0);
-    string2char(info2, tempstringInfo2, 3, frame_count, NB_CHAR_DISPLAYED(45, 6 /*px wide*/));
-    string2char(info3, tempstringInfo3, 3, frame_count, NB_CHAR_DISPLAYED(0, 6 /*px wide*/));
+    string2char(info2, tempstringInfo2, SCROLLING_SPEED, frame_count, NB_CHAR_DISPLAYED(45, 6 /*px wide*/));
+    string2char(info3, tempstringInfo3, SCROLLING_SPEED, frame_count, NB_CHAR_DISPLAYED(0, 6 /*px wide*/));
 
     u8g2->firstPage();
     do
