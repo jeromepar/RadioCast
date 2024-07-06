@@ -30,9 +30,12 @@ public:
     void actionB2_shortPress();
     void actionB2_doublePress();
 
+    Audio *get_outStream();
 
 private:
     WiFiManager *wifi;
+    Audio *outStream;
+
     wl_status_t previousStatus;
     // Handle to the RTOS audio task
     TaskHandle_t pAudioTask;

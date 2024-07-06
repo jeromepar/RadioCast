@@ -12,21 +12,6 @@ void handleButtonEvent(uint8_t pin, events event);
 // put function declarations here:
 static const char *TAG = "main";
 
-/*
-
-
-void configModeCallback(WiFiManager *myWiFiManager)
-{
-  ESP_LOGW(TAG, "WifiManager Entered config mode on %s/%s",
-           WiFi.softAPIP(),
-           WiFi.softAPIP().toString());
-}
-void saveConfigCallback()
-{
-  ESP_LOGI(TAG, "WifiManager data saved");
-}
-*/
-
 #include "U8g2lib.h"
 U8G2_SH1106_128X64_WINSTAR_F_HW_I2C u8g2(U8G2_R0, PIN_I2C_CLK, PIN_I2C_SDA);
 #include "../ressources/splash.xbm"
@@ -64,9 +49,6 @@ void init_buttons()
                { handleButtonEvent(PIN_BUTTON_2, Event_LongKeyPress); });
   button2.bind(Event_DoubleClick, []()
                { handleButtonEvent(PIN_BUTTON_2, Event_DoubleClick); });
-
-  // button2.bind(Event_KeyDown, [](){ESP_LOGI(TAG, "press2");});
-  // button2.bind(Event_KeyUp, [](){ESP_LOGI(TAG, "release2");});
 }
 
 void init_u8g2()
@@ -112,12 +94,15 @@ void setup()
 
   // init menu items (respect e_menu_index order)
   menus.push_back(new MenuItemBT(&u8g2));
-  //menus.push_back(new MenuItem("placeholderWifi", &u8g2));
+  // menus.push_back(new MenuItem("placeholder", &u8g2));
   menus.push_back(new MenuItemWIFI(&u8g2));
   menus.push_back(new MenuItemWIFIAP(&u8g2));
+  ESP_LOGI(TAG, "HEAP: post init %d", ESP.getFreeHeap());
 
   // start current one
   menus[currentMenuIndex]->start();
+
+  ESP_LOGI(TAG, "HEAP: post start %d", ESP.getFreeHeap());
 
   ESP_LOGI(TAG, "End INIT");
 }
@@ -140,9 +125,15 @@ void loop()
   /* test New Mode and housekeeping */
   if (old_currentMenuIndex != currentMenuIndex)
   {
+    ESP_LOGI(TAG, "HEAP: before stop %d", ESP.getFreeHeap());
+
     ESP_LOGI(TAG, "Quitting menu index (%d)", old_currentMenuIndex);
     menus[old_currentMenuIndex]->stop();
+    ESP_LOGI(TAG, "HEAP: after stop %d", ESP.getFreeHeap());
+
     ESP_LOGI(TAG, "Init menu index (%d)", currentMenuIndex);
+    ESP_LOGI(TAG, "HEAP: after start %d", ESP.getFreeHeap());
+
     menus[currentMenuIndex]->start();
   }
 
@@ -187,7 +178,14 @@ void handleButtonEvent(uint8_t pin, events eventType)
     {
     case Event_KeyPress:
       ESP_LOGI(TAG, "----------- B1 clicked");
-      currentMenuIndex = (e_menu_index)((currentMenuIndex + 1) % (IDX_END_NORMAL_MENU + 1));
+      if (currentMenuIndex > IDX_END_NORMAL_MENU)
+      {
+        currentMenuIndex = IDX_MENU_DEFAULT;
+      }
+      else
+      {
+        currentMenuIndex = (e_menu_index)((currentMenuIndex + 1) % (IDX_END_NORMAL_MENU + 1));
+      }
       ESP_LOGI(TAG, "new menu %d", currentMenuIndex);
 
       break;

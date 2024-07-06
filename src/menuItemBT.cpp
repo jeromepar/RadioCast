@@ -1,5 +1,7 @@
 #include "MenuItemBT.hpp"
 #include <esp_log.h>
+#include <Audio.h>
+
 #include "utils.hpp"
 static const char *TAG = "menuItemBT";
 
@@ -59,6 +61,13 @@ MenuItemBT::MenuItemBT(U8G2 *display) : MenuItem("BT", display)
 
 void MenuItemBT::start(void)
 {
+//esp_bluedroid_disable
+//esp_bluedroid_deinit
+//esp_bt_controller_disable
+//esp_bt_controller_deinit
+//esp_bt_controller_mem_release(ESP_BT_MODE_CLASSIC_BT)
+
+
     if (this->a2dp_sink == NULL)
     {
         ESP_LOGI(TAG, "A2DPsink creation");
@@ -68,17 +77,20 @@ void MenuItemBT::start(void)
     {
         ESP_LOGE(TAG, "A2DPsink allready instancied");
     }
-    // btStop(); /  btStart();
-    this->current_icon = this->icon_vector[0];
-    this->bt_state = e_bt_not_connected;
 
     i2s_pin_config_t pinConfig = {
         .bck_io_num = PIN_I2S_B_CK,
         .ws_io_num = PIN_I2S_W_S,
         .data_out_num = PIN_I2S_D_OUT,
-        .data_in_num = I2S_PIN_NO_CHANGE};
+        .data_in_num = I2S_PIN_NO_CHANGE
+    };
 
     this->a2dp_sink->set_pin_config(pinConfig);
+
+
+    // btStop(); /  btStart();
+    this->current_icon = this->icon_vector[0];
+    this->bt_state = e_bt_not_connected;
 
     this->a2dp_sink->set_avrc_metadata_attribute_mask(ESP_AVRC_MD_ATTR_TITLE | ESP_AVRC_MD_ATTR_ARTIST);
     this->a2dp_sink->set_avrc_metadata_callback(avrc_metadata_callback);
@@ -90,7 +102,7 @@ void MenuItemBT::start(void)
 void MenuItemBT::stop(void)
 {
     this->a2dp_sink->stop();
-
+    this->a2dp_sink->end(true);
     this->a2dp_sink->~BluetoothA2DPSink();
     this->a2dp_sink = NULL;
 }
@@ -110,7 +122,7 @@ void MenuItemBT::updateDisplay(uint32_t frame_count)
     }
     else
     {
-        current_icon = icon_vector[frame_count % 3];
+        current_icon = icon_vector[frame_count % 2];
         nb_dots = (frame_count % 3) + 1;
     }
     ESP_LOGV(TAG, "MenuItem %s updateDisplay (iter %d)", this->name, frame_count % 3);

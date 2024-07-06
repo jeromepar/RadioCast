@@ -17,8 +17,6 @@ static const char *TAG = "menuItemWIFI";
 
 static MenuItemWIFI *wifi_instance; // so sad, but used for callbacks
 
-Audio outStream(false);
-
 std::vector<station> stations;
 static bool SHARED_cmd_next_station;
 static bool SHARED_cmd_previous_station;
@@ -99,7 +97,7 @@ void audioProcessing(void *p)
             SHARED_cmd_previous_station = false;
 
             ESP_LOGI(TAG, "Stopping previous song/station");
-            outStream.stopSong();
+            wifi_instance->get_outStream()->stopSong();
 
             streamPlaying = false;
         }
@@ -110,17 +108,17 @@ void audioProcessing(void *p)
             ESP_LOGI(TAG, "new connection to %s at %s", stations[currentStationIndex].name, stations[currentStationIndex].url);
             wifi_instance->setInfo2((const uint8_t *)stations[currentStationIndex].name);
             wifi_instance->setInfo3((const uint8_t *)"buffering");
-            bool success = outStream.connecttohost(stations[currentStationIndex].url); // May fail due to wrong host address, socket error or timeout
+            bool success = wifi_instance->get_outStream()->connecttohost(stations[currentStationIndex].url); // May fail due to wrong host address, socket error or timeout
             ESP_LOGI(TAG, "Exit code %d", success);
 
             timeConnect_ = millis(); // Store time in order to detect stream errors after connecting
 
             // Update buffer state variables
-            audioBufferFilled_ = outStream.inBufferFilled(); // 0 after connecting
-            audioBufferSize_ = outStream.inBufferFree() + audioBufferFilled_;
+            audioBufferFilled_ = wifi_instance->get_outStream()->inBufferFilled(); // 0 after connecting
+            audioBufferSize_ = wifi_instance->get_outStream()->inBufferFree() + audioBufferFilled_;
 
             streamPlaying = true; // for basic check post-connection
-            outStream.setVolume(16);
+            wifi_instance->get_outStream()->setVolume(16);
         }
 
         // After the buffer has been filled up sufficiently enable audio output
@@ -145,9 +143,9 @@ void audioProcessing(void *p)
         }
 
         // Let 'esp32-audioI2S' library process the web radio stream data
-        outStream.loop();
+        wifi_instance->get_outStream()->loop();
 
-        audioBufferFilled_ = outStream.inBufferFilled(); // Update used buffer capacity
+        audioBufferFilled_ = wifi_instance->get_outStream()->inBufferFilled(); // Update used buffer capacity
         vTaskDelay(1 / portTICK_PERIOD_MS);              // Let other tasks execute
     }
 }
@@ -173,12 +171,7 @@ MenuItemWIFI::MenuItemWIFI(U8G2 *display) : MenuItem("WIFI", display)
     stations.push_back({"Radio Paradise Global", "http://stream.radioparadise.com/global-320"});
 
     this->pAudioTask = NULL;
-
-    /* ini I2S */
-    ESP_LOGV(TAG, "Init I2S");
-    outStream.setPinout(PIN_I2S_B_CK, PIN_I2S_W_S, PIN_I2S_D_OUT);
-    ESP_LOGV(TAG, "Pin SET");
-    outStream.setVolumeSteps(16);
+    this->outStream = NULL;
 
     /* shared variable */
     SHARED_cmd_next_station = false;
@@ -197,6 +190,16 @@ void MenuItemWIFI::start(void)
         ESP_LOGE(TAG, "WifiManager allready instancied");
     }
 
+    if (this->outStream == NULL)
+    {
+        ESP_LOGI(TAG, "outStream creation");
+        this->outStream = new Audio(false);
+    }
+    else
+    {
+        ESP_LOGE(TAG, "outStream allready instancied");
+    }
+
     ESP_LOGI(TAG, "WiFiManager init");
 
     // init WIFI
@@ -204,6 +207,12 @@ void MenuItemWIFI::start(void)
     wifi->setConfigPortalBlocking(false);
     wifi->setWiFiAutoReconnect(true);
     wifi->setConnectRetries(10);
+
+    /* ini I2S */
+    ESP_LOGV(TAG, "Init I2S");
+    outStream->setPinout(PIN_I2S_B_CK, PIN_I2S_W_S, PIN_I2S_D_OUT);
+    ESP_LOGV(TAG, "Pin SET");
+    outStream->setVolumeSteps(16);
 
     WiFi.mode(WIFI_STA); // explicitly set mode, esp defaults to STA+AP
 
@@ -233,7 +242,7 @@ void MenuItemWIFI::start(void)
 void MenuItemWIFI::stop(void)
 {
     ESP_LOGI(TAG, "stopping song");
-    outStream.stopSong();
+    outStream->stopSong();
 
     ESP_LOGI(TAG, "audio Task deletion");
     if (pAudioTask != NULL)
@@ -244,7 +253,10 @@ void MenuItemWIFI::stop(void)
     ESP_LOGI(TAG, "WiFiManager deletion");
 
     wifi->~WiFiManager();
+    outStream->~Audio();
+
     wifi = NULL;
+    outStream = NULL;
 
     WiFi.mode(WIFI_OFF);
 }
@@ -333,4 +345,9 @@ void MenuItemWIFI::actionB2_doublePress()
 {
     ESP_LOGI(TAG, "Previous station");
     SHARED_cmd_previous_station = true;
+}
+
+Audio *MenuItemWIFI::get_outStream()
+{
+    return this->outStream;
 }

@@ -5,6 +5,7 @@
 #include <U8g2lib.h>
 #include <MenuItem.hpp>
 
+#include <Audio.h>
 #include <AudioTools.h>
 #include <BluetoothA2DPSink.h>
 
@@ -22,12 +23,12 @@ public:
     void stop(void);
 
     void update(void);
-    void updateDisplay(uint32_t frame_count);    
+    void updateDisplay(uint32_t frame_count);
 
     void setConnectionStatus(e_bt_state state);
     void actionB2_longPress();
 
-    BluetoothA2DPSink* get_a2dp_sink(void);
+    BluetoothA2DPSink *get_a2dp_sink(void);
 
 private:
     e_bt_state bt_state;
