@@ -12,7 +12,7 @@ optional case? (cnc)
 
 # Hardware
 
-## microcrontroler: ESP32S3 WROOM (extended ram)
+## microcrontroler: ESP32S3
 pre-requisite: DualCore for performances, BT, Wifi
 
 | <!-- -->              | <!-- -->      |
@@ -62,7 +62,11 @@ from AE: [link](https://fr.aliexpress.com/item/1005004355547926.html)
 
 from AE: [link](https://fr.aliexpress.com/item/1005005393398013.html)
 
+### Hardware modification:
+note that to get a functionning device you must solder the 2 pads close to SCK (or bring it to GND)
+Those are circled in green in teh previous picture
 
+On my board, i also had to solder 3 pads of the jack connecter (it was only soldered on one side)
 
 # Implementation choices
 
@@ -74,6 +78,22 @@ Time management in main loop:
 >     * memorize current time  
 >     * increment frame count  
 >     * call updateDisplay  
+
+## Switching between features without rebooting
+
+The original projet  couldn't manage to switch beetween Wifi&Bluetooth without crashing due to lack of IRAM.
+Even though i properly desacllocated booth I2S/WIFI/BT on menu exit, the bluetooth still used an **UNSANE** amount of IRAM.
+and if you free it (with .end(true)), you can't start it again.
+
+if found these options:
+>-D BOARD_HAS_PSRAM
+>-mfix-esp32-psram-cache-issue
+>-D CONFIG_BT_ALLOCATION_FROM_SPIRAM_FIRST=1
+>-D CONFIG_SPIRAM_CACHE_WORKAROUND=1
+enabling the use of PSRAM (ram extension through SPI) but you need a special board/extension board
+
+I used the original solution temporarely (through define option *MY_ESP32_LACKS_SRAM*) and ordered an ESP32WROVER wich got a buildin 4Mo PSRAM
+
 
 
 # UI flow
@@ -92,12 +112,17 @@ Bluetooth / wifi only activated in their respected mode
 ## Radio
 
 press *button 2* to cycle between Radio stations. Those are hardcoded
+double click cycle back
 
 ## Bluetooth sink
 
 press *button 2* to force disconnect
 
+
+
 # TODO List
 * memorize & load through AP mode :
         - urls list
         - ESP name
+* solder board
+* case

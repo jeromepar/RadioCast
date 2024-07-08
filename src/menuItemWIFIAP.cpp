@@ -107,11 +107,11 @@ void MenuItemWIFIAP::updateDisplay(uint32_t frame_count)
         u8g2->drawXBM(-5, -3, 50, 50, current_icon);
 
         u8g2->setFont(u8g2_font_courR14_tf);
-        u8g2->drawStr(45, 5, tempstringInfo1);
+        u8g2->drawUTF8(45, 5, tempstringInfo1);
 
         u8g2->setFont(u8g2_font_courR08_tf);
-        u8g2->drawStr(45, CENTER_Y(0) + 2, tempstringInfo2);
-        u8g2->drawStr(0, CENTER_Y(0) + 2 + 16, tempstringInfo3);
+        u8g2->drawUTF8(45, CENTER_Y(0) + 2, tempstringInfo2);
+        u8g2->drawUTF8(0, CENTER_Y(0) + 2 + 16, tempstringInfo3);
 
     } while (u8g2->nextPage());
 }

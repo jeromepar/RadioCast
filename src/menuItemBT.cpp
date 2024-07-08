@@ -61,12 +61,6 @@ MenuItemBT::MenuItemBT(U8G2 *display) : MenuItem("BT", display)
 
 void MenuItemBT::start(void)
 {
-//esp_bluedroid_disable
-//esp_bluedroid_deinit
-//esp_bt_controller_disable
-//esp_bt_controller_deinit
-//esp_bt_controller_mem_release(ESP_BT_MODE_CLASSIC_BT)
-
 
     if (this->a2dp_sink == NULL)
     {
@@ -86,25 +80,28 @@ void MenuItemBT::start(void)
     };
 
     this->a2dp_sink->set_pin_config(pinConfig);
-
-
-    // btStop(); /  btStart();
+this->a2dp_sink->set_default_bt_mode(ESP_BT_MODE_CLASSIC_BT);
     this->current_icon = this->icon_vector[0];
     this->bt_state = e_bt_not_connected;
 
     this->a2dp_sink->set_avrc_metadata_attribute_mask(ESP_AVRC_MD_ATTR_TITLE | ESP_AVRC_MD_ATTR_ARTIST);
     this->a2dp_sink->set_avrc_metadata_callback(avrc_metadata_callback);
     this->a2dp_sink->set_avrc_connection_state_callback(a2dp_connection_state_changed);
-
     this->a2dp_sink->start(BT_NAME);
+
 }
 
 void MenuItemBT::stop(void)
 {
     this->a2dp_sink->stop();
-    this->a2dp_sink->end(true);
+     this->a2dp_sink->disconnect();
+    this->a2dp_sink->end();
+
     this->a2dp_sink->~BluetoothA2DPSink();
     this->a2dp_sink = NULL;
+    
+    sleep(1);
+
 }
 
 void MenuItemBT::update()
@@ -164,11 +161,11 @@ void MenuItemBT::updateDisplay(uint32_t frame_count)
             char tempstring[80];
 
             u8g2->setFont(u8g2_font_courR14_tf);
-            u8g2->drawStr(45, 5, tempstringInfo1);
+            u8g2->drawUTF8(45, 5, tempstringInfo1);
 
             u8g2->setFont(u8g2_font_courR08_tf);
-            u8g2->drawStr(45, CENTER_Y(0) + 2, tempstringInfo2);
-            u8g2->drawStr(0, CENTER_Y(0) + 2 + 16, tempstringInfo3);
+            u8g2->drawUTF8(45, CENTER_Y(0) + 2, tempstringInfo2);
+            u8g2->drawUTF8(0, CENTER_Y(0) + 2 + 16, tempstringInfo3);
         }
 
     } while (u8g2->nextPage());

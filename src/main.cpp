@@ -1,5 +1,6 @@
 #include <Arduino.h>
 #include <esp_log.h>
+#include <EEPROM.h>
 
 #include "defines.h"
 
@@ -12,8 +13,8 @@ void handleButtonEvent(uint8_t pin, events event);
 // put function declarations here:
 static const char *TAG = "main";
 
-#include "U8g2lib.h"
-U8G2_SH1106_128X64_WINSTAR_F_HW_I2C u8g2(U8G2_R0, PIN_I2C_CLK, PIN_I2C_SDA);
+#include <U8g2lib.h>
+U8G2_SH1106_128X64_WINSTAR_2_HW_I2C u8g2(U8G2_R0, PIN_I2C_CLK, PIN_I2C_SDA);
 #include "../ressources/splash.xbm"
 
 #include "MenuItemBT.hpp"
@@ -25,6 +26,7 @@ typedef enum
   IDX_MENU_RADIO,
   IDX_END_NORMAL_MENU = IDX_MENU_RADIO,
   IDX_MENU_AP,
+  IDX_MENU_MAX = IDX_MENU_AP
 } e_menu_index;
 
 #define IDX_MENU_DEFAULT IDX_MENU_BLUETOOTH
@@ -51,7 +53,7 @@ void init_buttons()
                { handleButtonEvent(PIN_BUTTON_2, Event_DoubleClick); });
 }
 
-void init_u8g2()
+void init_u8g2(bool draw_logo)
 {
   ESP_LOGD(TAG, "init_u8g2");
 
@@ -67,28 +69,60 @@ void init_u8g2()
 
   u8g2.setBusClock(800000);
 
-  uint64_t time_before = micros();
-
-  u8g2.firstPage();
-  do
+  if (draw_logo)
   {
-    u8g2.drawXBM(0, 0, 128, 64, (const uint8_t *)splash);
-  } while (u8g2.nextPage());
+    uint64_t time_before = micros();
 
-  ESP_LOGI(TAG, "time to draw logo : %.3fms", (micros() - time_before) / 1000.0);
+    u8g2.firstPage();
+    do
+    {
+      u8g2.drawXBM(0, 0, 128, 64, (const uint8_t *)splash);
+    } while (u8g2.nextPage());
+
+    ESP_LOGI(TAG, "time to draw logo : %.3fms", (micros() - time_before) / 1000.0);
+    sleep(1);
+  }
 }
 
 void setup()
 {
   Serial.begin(115200);
-  init_u8g2();
 
-  sleep(1);
+  esp_reset_reason_t reset_reason = esp_reset_reason();
+
+  if (reset_reason == ESP_RST_POWERON)
+  {
+    init_u8g2(true);
+  }
+  else
+  {
+    init_u8g2(false);
+  }
+
   ESP_LOGD(TAG, "Start INIT");
 
   init_buttons();
+  if (EEPROM.begin(sizeof(uint8_t)))
+  {
 
-  currentMenuIndex = IDX_MENU_DEFAULT;
+    uint8_t mode = EEPROM.readByte(EEPROM_ADDR_CURRENT_IDX);
+#ifdef MY_ESP32_LACKS_SRAM
+    if (mode <= IDX_MENU_MAX)
+#else
+    if (mode <= IDX_END_NORMAL_MENU)
+#endif
+    {
+      currentMenuIndex = (e_menu_index)mode;
+    }
+    else
+    {
+      currentMenuIndex = IDX_MENU_DEFAULT;
+    }
+  }
+  else
+  {
+    ESP_LOGE(TAG, "EEPROM init failed");
+  }
 
   // wifiManager.erase(); //suppression des credentials memorises
 
@@ -118,6 +152,22 @@ void loop()
 
   ESP_LOGV(TAG, "LOOP");
 
+  /* start of loop managment -> DISPLAY */
+  uint64_t time_end_loop = millis();
+  if ((time_end_loop - time_last_frame) > (uint64_t)(FRAME_DURATION_MS))
+  {
+
+    frame_count++;
+    time_last_frame = time_end_loop;
+
+    ESP_LOGD(TAG, "Display updated (frame %d at %f))", frame_count, (double)time_end_loop / 1000.0);
+    ESP_LOGD(TAG, "Menu activated: %d at %x", currentMenuIndex, menus[currentMenuIndex]);
+
+    uint64_t time_before = micros();
+    (menus[currentMenuIndex])->updateDisplay(frame_count);
+    ESP_LOGD(TAG, "time to render : %.3fms", (micros() - time_before) / 1000.0);
+  }
+
   /* first process inputs */
   button1.processSyncEvents();
   button2.processSyncEvents();
@@ -130,6 +180,14 @@ void loop()
     ESP_LOGI(TAG, "Quitting menu index (%d)", old_currentMenuIndex);
     menus[old_currentMenuIndex]->stop();
     ESP_LOGI(TAG, "HEAP: after stop %d", ESP.getFreeHeap());
+
+    // memorize new mode
+    EEPROM.writeByte(EEPROM_ADDR_CURRENT_IDX, (uint8_t)currentMenuIndex);
+    EEPROM.commit();
+
+#ifdef MY_ESP32_LACKS_SRAM
+    ESP.restart();
+#endif
 
     ESP_LOGI(TAG, "Init menu index (%d)", currentMenuIndex);
     ESP_LOGI(TAG, "HEAP: after start %d", ESP.getFreeHeap());
@@ -146,22 +204,6 @@ void loop()
     test_done = true;
     ESP_LOGW(TAG, "TEST pressed 2 (%d)", Event_KeyPress);
     handleButtonEvent(PIN_BUTTON_2, Event_KeyPress);
-  }
-
-  /* end of loop managment -> DISPLAY */
-  uint64_t time_end_loop = millis();
-  if ((time_end_loop - time_last_frame) > (uint64_t)(FRAME_DURATION_MS))
-  {
-
-    frame_count++;
-    time_last_frame = time_end_loop;
-
-    ESP_LOGD(TAG, "Display updated (frame %d at %f))", frame_count, (double)time_end_loop / 1000.0);
-    ESP_LOGD(TAG, "Menu activated: %d at %x", currentMenuIndex, menus[currentMenuIndex]);
-
-    uint64_t time_before = micros();
-    (menus[currentMenuIndex])->updateDisplay(frame_count);
-    ESP_LOGD(TAG, "time to render : %.3fms", (micros() - time_before) / 1000.0);
   }
 
   old_currentMenuIndex = currentMenuIndex;
