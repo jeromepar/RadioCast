@@ -119,7 +119,7 @@ void MenuItemBT::updateDisplay(uint32_t frame_count)
     }
     else
     {
-        current_icon = icon_vector[frame_count % 2];
+        current_icon = icon_vector[frame_count % 3];
         nb_dots = (frame_count % 3) + 1;
     }
     ESP_LOGV(TAG, "MenuItem %s updateDisplay (iter %d)", this->name, frame_count % 3);

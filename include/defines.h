@@ -4,11 +4,15 @@
 #define PIN_I2C_CLK 22
 #define PIN_I2C_SDA 21
 
-#define PIN_BUTTON_1        GPIO_NUM_16
-#define PIN_BUTTON_2        GPIO_NUM_17
-#define PIN_I2S_B_CK         GPIO_NUM_25
-#define PIN_I2S_W_S          GPIO_NUM_26
-#define PIN_I2S_D_OUT       GPIO_NUM_27
+#define PIN_BUTTON_1        GPIO_NUM_12
+#define PIN_BUTTON_2        GPIO_NUM_14
+
+#define PIN_I2S_B_CK         GPIO_NUM_17
+#define PIN_I2S_W_S          GPIO_NUM_4
+#define PIN_I2S_D_OUT       GPIO_NUM_16
+
+
+
 
 #define MAX(a,b) ((a)>(b)?(a):(b))
 

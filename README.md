@@ -82,17 +82,17 @@ Time management in main loop:
 ## Switching between features without rebooting
 
 The original projet  couldn't manage to switch beetween Wifi&Bluetooth without crashing due to lack of IRAM.
-Even though i properly desacllocated booth I2S/WIFI/BT on menu exit, the bluetooth still used an **UNSANE** amount of IRAM.
+Even though i properly desallocated booth I2S/WIFI/BT on menu exit, the bluetooth still used an **UNSANE** amount of IRAM.
 and if you free it (with .end(true)), you can't start it again.
 
-if found these options:
+I found these options:
 >-D BOARD_HAS_PSRAM
 >-mfix-esp32-psram-cache-issue
 >-D CONFIG_BT_ALLOCATION_FROM_SPIRAM_FIRST=1
 >-D CONFIG_SPIRAM_CACHE_WORKAROUND=1
 enabling the use of PSRAM (ram extension through SPI) but you need a special board/extension board
 
-I used the original solution temporarely (through define option *MY_ESP32_LACKS_SRAM*) and ordered an ESP32WROVER wich got a buildin 4Mo PSRAM
+I used the solution from the "original" project (through define option *MY_ESP32_LACKS_SRAM*) and ordered an ESP32WROVER wich got a buildin 4Mo PSRAM
 
 
 
@@ -119,10 +119,23 @@ double click cycle back
 press *button 2* to force disconnect
 
 
+# Build
+
+## 1st version => waste of time
+
+I started soldering all the components to a protoboard source from AE, but my program wasn't working, blocking at I2C init or hallucinating button press.
+My best guess is that the board quality was so low than only by connecting to the pads it was inducing noise, triggering interruptions from the buttons or the 2 clock lines....
+
+## 2nd version => working at least
+
+![recto](ressources/proto1.jpg)
+![verso](ressources/proto1.jpg)
+
+pretty ugly but working well, i will look for a case in my supplies to top it up a notch.
 
 # TODO List
 * memorize & load through AP mode :
         - urls list
         - ESP name
-* solder board
+* upgrade to ESPWROVER
 * case

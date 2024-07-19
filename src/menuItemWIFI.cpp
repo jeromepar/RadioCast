@@ -110,6 +110,16 @@ void audioProcessing(void *p)
             wifi_instance->setInfo3((const uint8_t *)"buffering");
             bool success = wifi_instance->get_outStream()->connecttohost(stations[currentStationIndex].url); // May fail due to wrong host address, socket error or timeout
             ESP_LOGI(TAG, "Exit code %d", success);
+            if(success)
+            {
+                wifi_instance->setInfo2((const uint8_t *)stations[currentStationIndex].name);
+                wifi_instance->setInfo3((const uint8_t *)"buffering");
+            } 
+            else
+            {
+               wifi_instance->setInfo2((const uint8_t *)stations[currentStationIndex].name);
+               wifi_instance->setInfo3((const uint8_t *)"invalid URL"); 
+            }
 
             timeConnect_ = millis(); // Store time in order to detect stream errors after connecting
 
@@ -232,11 +242,12 @@ void MenuItemWIFI::start(void)
     {
         ESP_LOGI(TAG, "Autoconnect start");
         wifi->autoConnect();
+        xTaskCreate(audioProcessing, "Audio processing task", 4096 /*stack*/, nullptr, configMAX_PRIORITIES - 4, &pAudioTask);
+
     }
     ESP_LOGI(TAG, "Wifi state after start %d", WiFi.status());
 
     // Start the audio processing task
-    xTaskCreate(audioProcessing, "Audio processing task", 4096 /*stack*/, nullptr, configMAX_PRIORITIES - 4, &pAudioTask);
 }
 
 void MenuItemWIFI::stop(void)
@@ -288,9 +299,7 @@ void MenuItemWIFI::update()
             break;
 
         default:
-            info1 = "OUPS";
-            info2 = "unexpected";
-            info3 = String(currentStatus);
+            //do nothing (start placed those values)
             break;
         }
 

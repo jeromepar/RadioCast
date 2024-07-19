@@ -60,6 +60,7 @@ void init_u8g2(bool draw_logo)
   u8g2.begin();
   u8g2.firstPage();
 
+  u8g2.setDisplayRotation(U8G2_R2);
   u8g2.setDrawColor(1);
   u8g2.setFontPosTop();
   u8g2.setFontDirection(0);
