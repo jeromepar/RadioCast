@@ -44,7 +44,7 @@ void avrc_metadata_callback(uint8_t id, const uint8_t *text)
     }
 }
 
-MenuItemBT::MenuItemBT(U8G2 *display) : MenuItem("BT", display)
+MenuItemBT::MenuItemBT(U8G2 *display, char* bt_name) : MenuItem("BT", display)
 {
     ESP_LOGV(TAG, "MenuItem %s constructor", this->name);
 
@@ -53,6 +53,7 @@ MenuItemBT::MenuItemBT(U8G2 *display) : MenuItem("BT", display)
     this->icon_vector.push_back((const unsigned char *)BT_c_3);
     this->icon_vector.push_back((const unsigned char *)BT_note);
     this->current_icon = this->icon_vector[0];
+    this->bt_name = bt_name;
 
     bluetooth_instance = this; // for callbacks
 
@@ -76,32 +77,29 @@ void MenuItemBT::start(void)
         .bck_io_num = PIN_I2S_B_CK,
         .ws_io_num = PIN_I2S_W_S,
         .data_out_num = PIN_I2S_D_OUT,
-        .data_in_num = I2S_PIN_NO_CHANGE
-    };
+        .data_in_num = I2S_PIN_NO_CHANGE};
 
     this->a2dp_sink->set_pin_config(pinConfig);
-this->a2dp_sink->set_default_bt_mode(ESP_BT_MODE_CLASSIC_BT);
+    this->a2dp_sink->set_default_bt_mode(ESP_BT_MODE_CLASSIC_BT);
     this->current_icon = this->icon_vector[0];
     this->bt_state = e_bt_not_connected;
 
     this->a2dp_sink->set_avrc_metadata_attribute_mask(ESP_AVRC_MD_ATTR_TITLE | ESP_AVRC_MD_ATTR_ARTIST);
     this->a2dp_sink->set_avrc_metadata_callback(avrc_metadata_callback);
     this->a2dp_sink->set_avrc_connection_state_callback(a2dp_connection_state_changed);
-    this->a2dp_sink->start(BT_NAME);
-
+    this->a2dp_sink->start(bt_name);
 }
 
 void MenuItemBT::stop(void)
 {
     this->a2dp_sink->stop();
-     this->a2dp_sink->disconnect();
+    this->a2dp_sink->disconnect();
     this->a2dp_sink->end();
 
     this->a2dp_sink->~BluetoothA2DPSink();
     this->a2dp_sink = NULL;
-    
-    sleep(1);
 
+    sleep(1);
 }
 
 void MenuItemBT::update()
@@ -140,7 +138,7 @@ void MenuItemBT::updateDisplay(uint32_t frame_count)
         if (bt_state == e_bt_not_connected)
         {
 
-            u8g2->drawStr(50, POSITION_Y(0, 3), BT_NAME);
+            u8g2->drawStr(50, POSITION_Y(0, 3), bt_name);
             u8g2->drawStr(50, POSITION_Y(1, 3), "Ready ");
 
             switch (nb_dots)
@@ -170,6 +168,7 @@ void MenuItemBT::updateDisplay(uint32_t frame_count)
 
     } while (u8g2->nextPage());
 }
+
 
 void MenuItemBT::setConnectionStatus(e_bt_state state)
 {

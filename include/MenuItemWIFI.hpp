@@ -19,7 +19,7 @@ typedef struct
 class MenuItemWIFI : public MenuItem
 {
 public:
-    MenuItemWIFI(U8G2 *u8g2);
+    MenuItemWIFI(U8G2 *u8g2, char *radio_stations);
 
     void start(void);
     void stop(void);

@@ -10,7 +10,7 @@
 class MenuItemWIFIAP : public MenuItem
 {
 public:
-    MenuItemWIFIAP(U8G2 *u8g2);
+    MenuItemWIFIAP(U8G2 *u8g2, char* radio_stations_memo);
 
     void start(void);
     void stop(void);
@@ -20,6 +20,11 @@ public:
 
 private:
     WiFiManager *wifi;
+
+    WiFiManagerParameter *BTnameParam;
+    WiFiManagerParameter *radioListParam;
+
+    char*radio_stations_memo;
 
 };
 

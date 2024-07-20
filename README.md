@@ -107,6 +107,8 @@ Bluetooth / wifi only activated in their respected mode
   
 1 auxiliary function: *Button 1* long press enter WIFI AP configuration mode. Allows to:
 - input credential for the Wifi
+        * input BT device name *<40char*
+        * stations list (Name1,url1,Name2,url2) *no https, no comma at the end of the string, url<200char, list<2000char*
 - update firmware
 
 ## Radio
@@ -129,13 +131,10 @@ My best guess is that the board quality was so low than only by connecting to th
 ## 2nd version => working at least
 
 ![recto](ressources/proto1.jpg)
-![verso](ressources/proto1.jpg)
+![verso](ressources/proto2.jpg)
 
 pretty ugly but working well, i will look for a case in my supplies to top it up a notch.
 
 # TODO List
-* memorize & load through AP mode :
-        - urls list
-        - ESP name
 * upgrade to ESPWROVER
 * case

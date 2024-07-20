@@ -21,21 +21,42 @@ std::vector<station> stations;
 static bool SHARED_cmd_next_station;
 static bool SHARED_cmd_previous_station;
 
-/*
-void avrc_metadata_callback(uint8_t id, const uint8_t *text)
+void parse_stations(char *radio_stations)
 {
-    switch (id)
-    {
-    case ESP_AVRC_MD_ATTR_TITLE:
-        bluetooth_instance->setInfo2(text);
-        break;
+    stations.empty();
 
-    case ESP_AVRC_MD_ATTR_ARTIST:
-        bluetooth_instance->setInfo3(text);
-        break;
+    
+    int total_radio_length = strlen(radio_stations);
+    char *in_str = radio_stations;
+    char radio_name[50];
+    char radio_url[200];
+
+
+    while (true)
+    {
+        if (in_str>=(radio_stations+total_radio_length))
+        {
+            break;
+        }
+
+        char *ptr1stComma = strstr(in_str, ",");
+        char *ptr2ndComma = strstr(ptr1stComma + 1, ",");
+        if (ptr2ndComma == NULL) // endString
+        {
+            ptr2ndComma = ptr1stComma + strlen(ptr1stComma);
+        }
+        strncpy(radio_name, in_str, MIN((ptr1stComma - in_str), 50));
+        radio_name[MIN((ptr1stComma - in_str), 49)] = 0; // end string
+        strncpy(radio_url, ptr1stComma + 1, MIN((ptr2ndComma - ptr1stComma-1), 200));
+        radio_url[MIN((ptr2ndComma - ptr1stComma-1), 199)] = 0; // end string
+
+        ESP_LOGI(TAG, "Found radio \"%s\" at \"%s\"", radio_name, radio_url);
+        in_str = ptr2ndComma + 1;
+
+
+        stations.push_back({radio_name, radio_url});
     }
 }
-*/
 
 // called by Audio
 void audio_showstation(const char *info)
@@ -110,15 +131,15 @@ void audioProcessing(void *p)
             wifi_instance->setInfo3((const uint8_t *)"buffering");
             bool success = wifi_instance->get_outStream()->connecttohost(stations[currentStationIndex].url); // May fail due to wrong host address, socket error or timeout
             ESP_LOGI(TAG, "Exit code %d", success);
-            if(success)
+            if (success)
             {
                 wifi_instance->setInfo2((const uint8_t *)stations[currentStationIndex].name);
                 wifi_instance->setInfo3((const uint8_t *)"buffering");
-            } 
+            }
             else
             {
-               wifi_instance->setInfo2((const uint8_t *)stations[currentStationIndex].name);
-               wifi_instance->setInfo3((const uint8_t *)"invalid URL"); 
+                wifi_instance->setInfo2((const uint8_t *)stations[currentStationIndex].name);
+                wifi_instance->setInfo3((const uint8_t *)"invalid URL");
             }
 
             timeConnect_ = millis(); // Store time in order to detect stream errors after connecting
@@ -156,11 +177,11 @@ void audioProcessing(void *p)
         wifi_instance->get_outStream()->loop();
 
         audioBufferFilled_ = wifi_instance->get_outStream()->inBufferFilled(); // Update used buffer capacity
-        vTaskDelay(1 / portTICK_PERIOD_MS);              // Let other tasks execute
+        vTaskDelay(1 / portTICK_PERIOD_MS);                                    // Let other tasks execute
     }
 }
 
-MenuItemWIFI::MenuItemWIFI(U8G2 *display) : MenuItem("WIFI", display)
+MenuItemWIFI::MenuItemWIFI(U8G2 *display, char *radio_stations) : MenuItem("WIFI", display)
 {
     ESP_LOGV(TAG, "MenuItem %s constructor", this->name);
 
@@ -173,19 +194,15 @@ MenuItemWIFI::MenuItemWIFI(U8G2 *display) : MenuItem("WIFI", display)
 
     wifi_instance = this; // for callbacks
 
-    stations.push_back({"Radio Paradise", "http://stream.radioparadise.com/aac-320"});
-    stations.push_back({"France Culture", "http://direct.franceculture.fr/live/franceculture-hifi.aac"});
-    stations.push_back({"FIP", "http://direct.fipradio.fr/live/fip-hifi.aac"});
-    stations.push_back({"Rire&Chanson nouvelle generation", "http://185.52.127.162/fr/30405/mp3_128.mp3?origine=fluxradios&adws_out_1=&access_token=38fb0edda3954ad48a099f50110212cd"});
-    stations.push_back({"Radio Paradise Mellow", "http://stream.radioparadise.com/mellow-320"});
-    stations.push_back({"Radio Paradise Global", "http://stream.radioparadise.com/global-320"});
-
     this->pAudioTask = NULL;
     this->outStream = NULL;
 
     /* shared variable */
     SHARED_cmd_next_station = false;
     SHARED_cmd_previous_station = false;
+
+    /* parsing of radioStations */
+    parse_stations(radio_stations);
 }
 
 void MenuItemWIFI::start(void)
@@ -243,7 +260,6 @@ void MenuItemWIFI::start(void)
         ESP_LOGI(TAG, "Autoconnect start");
         wifi->autoConnect();
         xTaskCreate(audioProcessing, "Audio processing task", 4096 /*stack*/, nullptr, configMAX_PRIORITIES - 4, &pAudioTask);
-
     }
     ESP_LOGI(TAG, "Wifi state after start %d", WiFi.status());
 
@@ -299,7 +315,7 @@ void MenuItemWIFI::update()
             break;
 
         default:
-            //do nothing (start placed those values)
+            // do nothing (start placed those values)
             break;
         }
 

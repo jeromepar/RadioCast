@@ -17,7 +17,7 @@ typedef enum
 class MenuItemBT : public MenuItem
 {
 public:
-    MenuItemBT(U8G2 *u8g2);
+    MenuItemBT(U8G2 *u8g2, char* bt_name);
 
     void start(void);
     void stop(void);
@@ -33,4 +33,5 @@ public:
 private:
     e_bt_state bt_state;
     BluetoothA2DPSink *a2dp_sink;
+    char *bt_name;
 };

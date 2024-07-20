@@ -13,6 +13,9 @@ void handleButtonEvent(uint8_t pin, events event);
 // put function declarations here:
 static const char *TAG = "main";
 
+char bt_name[MAX_LENGTH_BT_NAME] = DEFAULT_BT_NAME;
+char radio_stations[MAX_LENGTH_STATION_LIST] = DEFAULT_STATIONS;
+
 #include <U8g2lib.h>
 U8G2_SH1106_128X64_WINSTAR_2_HW_I2C u8g2(U8G2_R0, PIN_I2C_CLK, PIN_I2C_SDA);
 #include "../ressources/splash.xbm"
@@ -103,7 +106,7 @@ void setup()
   ESP_LOGD(TAG, "Start INIT");
 
   init_buttons();
-  if (EEPROM.begin(sizeof(uint8_t)))
+  if (EEPROM.begin(EEPROM_ADDR_STATIONS+MAX_LENGTH_STATION_LIST))
   {
 
     uint8_t mode = EEPROM.readByte(EEPROM_ADDR_CURRENT_IDX);
@@ -119,6 +122,31 @@ void setup()
     {
       currentMenuIndex = IDX_MENU_DEFAULT;
     }
+
+    uint8_t is_BT_name_valid = (EEPROM.readByte(EEPROM_ADDR_ESPNAME_VALID) == EEPROM_MAGIC_VALID);
+    if (is_BT_name_valid)
+    {
+      ESP_LOGI(TAG, "found valid BT name in EEPROM");
+      EEPROM.readBytes(EEPROM_ADDR_ESPNAME, bt_name, MAX_LENGTH_BT_NAME);
+    }
+    else
+    {
+      ESP_LOGI(TAG, "no valid BT name in EEPROM (%d)",EEPROM.readByte(EEPROM_ADDR_ESPNAME_VALID));
+    }
+
+    uint8_t is_RadioList_valid = (EEPROM.readByte(EEPROM_ADDR_STATIONS_VALID) == EEPROM_MAGIC_VALID);
+    if (is_RadioList_valid)
+    {
+      ESP_LOGI(TAG, "found valid RadioList in EEPROM");
+      int l = EEPROM.readInt(EEPROM_ADDR_STATIONS_LENGTH);
+      ESP_LOGI(TAG, "length %d", l);
+      EEPROM.readBytes(EEPROM_ADDR_STATIONS, radio_stations, MAX_LENGTH_STATION_LIST);
+      radio_stations[MAX_LENGTH_STATION_LIST - 1] = 0;
+    }
+    else
+    {
+      ESP_LOGI(TAG, "no valid RadioList in EEPROM (%d)",EEPROM_ADDR_STATIONS_VALID);
+    }
   }
   else
   {
@@ -128,10 +156,10 @@ void setup()
   // wifiManager.erase(); //suppression des credentials memorises
 
   // init menu items (respect e_menu_index order)
-  menus.push_back(new MenuItemBT(&u8g2));
+  menus.push_back(new MenuItemBT(&u8g2, bt_name));
   // menus.push_back(new MenuItem("placeholder", &u8g2));
-  menus.push_back(new MenuItemWIFI(&u8g2));
-  menus.push_back(new MenuItemWIFIAP(&u8g2));
+  menus.push_back(new MenuItemWIFI(&u8g2, radio_stations));
+  menus.push_back(new MenuItemWIFIAP(&u8g2, radio_stations));
   ESP_LOGI(TAG, "HEAP: post init %d", ESP.getFreeHeap());
 
   // start current one

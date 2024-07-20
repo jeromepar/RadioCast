@@ -1,5 +1,6 @@
 #include "MenuItemWIFIAP.hpp"
 #include <esp_log.h>
+#include <EEPROM.h>
 
 #include "WifiManager.h"
 #include "utils.hpp"
@@ -12,7 +13,16 @@ static const char *TAG = "menuItemWIFI_AP";
 
 #include "defines.h"
 
-MenuItemWIFIAP::MenuItemWIFIAP(U8G2 *display) : MenuItem("WIFI_AP", display)
+static bool SHARED_cmd_save_param = false;
+
+// callback notifying us of the need to save config
+void saveConfigCallback()
+{
+    ESP_LOGI(TAG, "Callback WIFI AP");
+    SHARED_cmd_save_param = true;
+}
+
+MenuItemWIFIAP::MenuItemWIFIAP(U8G2 *display, char *radio_stations_memo) : MenuItem("WIFI_AP", display)
 {
     ESP_LOGV(TAG, "MenuItem %s constructor", this->name);
 
@@ -21,6 +31,7 @@ MenuItemWIFIAP::MenuItemWIFIAP(U8G2 *display) : MenuItem("WIFI_AP", display)
     this->icon_vector.push_back((const unsigned char *)AP_3);
     this->current_icon = this->icon_vector[0];
     this->wifi = NULL;
+    this->radio_stations_memo = radio_stations_memo;
 }
 
 void MenuItemWIFIAP::start(void)
@@ -39,6 +50,12 @@ void MenuItemWIFIAP::start(void)
 
     // init WIFI
     wifi->setConfigPortalBlocking(false);
+    wifi->setSaveParamsCallback(saveConfigCallback);
+
+    this->BTnameParam = new WiFiManagerParameter("BTname", "Bluetooth Device name", DEFAULT_BT_NAME, MAX_LENGTH_BT_NAME);
+    wifi->addParameter(BTnameParam);
+    this->radioListParam = new WiFiManagerParameter("RadioList", "RadioList (name1,url1,name2,url2)", radio_stations_memo, MAX_LENGTH_STATION_LIST);
+    wifi->addParameter(radioListParam);
 
     wifi->startConfigPortal(WIFI_NAME);
     info1 = WIFI_NAME;
@@ -55,6 +72,9 @@ void MenuItemWIFIAP::stop(void)
     ESP_LOGI(TAG, "WiFiManager deletion");
     wifi->~WiFiManager();
     wifi = NULL;
+
+    this->BTnameParam->~WiFiManagerParameter();
+    this->radioListParam->~WiFiManagerParameter();
 
     WiFi.mode(WIFI_OFF);
 }
@@ -82,6 +102,32 @@ void MenuItemWIFIAP::update()
             info2 = "";
             info3 = String(nb_clients_connected) + " client connected";
         }
+    }
+
+    if (SHARED_cmd_save_param)
+    {
+        SHARED_cmd_save_param = false;
+
+        ESP_LOGI(TAG, "Saving wifi AP parameters");
+        ESP_LOGI(TAG, "new ESP name %s", BTnameParam->getValue());
+
+        size_t ret_sz = EEPROM.writeByte(EEPROM_ADDR_ESPNAME_VALID, EEPROM_MAGIC_VALID);
+        ESP_LOGD(TAG, "written %db", ret_sz);
+
+        ESP_LOGD(TAG, "radio LEN %db",  strnlen(BTnameParam->getValue(), MAX_LENGTH_BT_NAME));
+        ret_sz = EEPROM.writeBytes(EEPROM_ADDR_ESPNAME, BTnameParam->getValue(), strnlen(BTnameParam->getValue(), MAX_LENGTH_BT_NAME));
+        ESP_LOGD(TAG, "written %db", ret_sz);
+
+        ESP_LOGD(TAG, "new Radio List %s", radioListParam->getValue());
+        ret_sz = EEPROM.writeByte(EEPROM_ADDR_STATIONS_VALID, EEPROM_MAGIC_VALID);
+        ESP_LOGD(TAG, "written %db", ret_sz);
+        int l = strnlen(radioListParam->getValue(), MAX_LENGTH_STATION_LIST);
+        ret_sz = EEPROM.writeInt(EEPROM_ADDR_STATIONS_LENGTH, l);
+        ESP_LOGD(TAG, "written %db", ret_sz);
+        ret_sz = EEPROM.writeBytes(EEPROM_ADDR_STATIONS, radioListParam->getValue(), l);
+        ESP_LOGD(TAG, "written %db", ret_sz);
+
+        EEPROM.commit();
     }
 
     wifi->process();
