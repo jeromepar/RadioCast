@@ -106,15 +106,12 @@ void setup()
   ESP_LOGD(TAG, "Start INIT");
 
   init_buttons();
-  if (EEPROM.begin(EEPROM_ADDR_STATIONS+MAX_LENGTH_STATION_LIST))
+  if (EEPROM.begin(EEPROM_ADDR_STATIONS + MAX_LENGTH_STATION_LIST))
   {
 
     uint8_t mode = EEPROM.readByte(EEPROM_ADDR_CURRENT_IDX);
-#ifdef MY_ESP32_LACKS_SRAM
-    if (mode <= IDX_MENU_MAX)
-#else
+
     if (mode <= IDX_END_NORMAL_MENU)
-#endif
     {
       currentMenuIndex = (e_menu_index)mode;
     }
@@ -131,7 +128,7 @@ void setup()
     }
     else
     {
-      ESP_LOGI(TAG, "no valid BT name in EEPROM (%d)",EEPROM.readByte(EEPROM_ADDR_ESPNAME_VALID));
+      ESP_LOGI(TAG, "no valid BT name in EEPROM (%d)", EEPROM.readByte(EEPROM_ADDR_ESPNAME_VALID));
     }
 
     uint8_t is_RadioList_valid = (EEPROM.readByte(EEPROM_ADDR_STATIONS_VALID) == EEPROM_MAGIC_VALID);
@@ -145,7 +142,7 @@ void setup()
     }
     else
     {
-      ESP_LOGI(TAG, "no valid RadioList in EEPROM (%d)",EEPROM_ADDR_STATIONS_VALID);
+      ESP_LOGI(TAG, "no valid RadioList in EEPROM (%d)", EEPROM_ADDR_STATIONS_VALID);
     }
   }
   else
@@ -210,13 +207,12 @@ void loop()
     menus[old_currentMenuIndex]->stop();
     ESP_LOGI(TAG, "HEAP: after stop %d", ESP.getFreeHeap());
 
-    // memorize new mode
-    EEPROM.writeByte(EEPROM_ADDR_CURRENT_IDX, (uint8_t)currentMenuIndex);
-    EEPROM.commit();
-
-#ifdef MY_ESP32_LACKS_SRAM
-    ESP.restart();
-#endif
+    // memorize new mode (if normal)
+    if (currentMenuIndex <= IDX_END_NORMAL_MENU)
+    {
+      EEPROM.writeByte(EEPROM_ADDR_CURRENT_IDX, (uint8_t)currentMenuIndex);
+      EEPROM.commit();
+    }
 
     ESP_LOGI(TAG, "Init menu index (%d)", currentMenuIndex);
     ESP_LOGI(TAG, "HEAP: after start %d", ESP.getFreeHeap());

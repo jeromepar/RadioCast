@@ -54,6 +54,7 @@ MenuItemBT::MenuItemBT(U8G2 *display, char* bt_name) : MenuItem("BT", display)
     this->icon_vector.push_back((const unsigned char *)BT_note);
     this->current_icon = this->icon_vector[0];
     this->bt_name = bt_name;
+    this->has_been_unallocated = false;
 
     bluetooth_instance = this; // for callbacks
 
@@ -62,6 +63,12 @@ MenuItemBT::MenuItemBT(U8G2 *display, char* bt_name) : MenuItem("BT", display)
 
 void MenuItemBT::start(void)
 {
+
+    if(has_been_unallocated)
+    {
+        //can't relaunch BT pile if unnallocated : reboot
+        ESP.restart();
+    }
 
     if (this->a2dp_sink == NULL)
     {
@@ -94,7 +101,13 @@ void MenuItemBT::stop(void)
 {
     this->a2dp_sink->stop();
     this->a2dp_sink->disconnect();
-    this->a2dp_sink->end();
+
+    #ifdef MY_ESP32_LACKS_SRAM
+        this->a2dp_sink->end(true);
+        this->has_been_unallocated = true;
+    #else
+        this->a2dp_sink->end();
+    #endif
 
     this->a2dp_sink->~BluetoothA2DPSink();
     this->a2dp_sink = NULL;

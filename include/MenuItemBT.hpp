@@ -32,6 +32,7 @@ public:
 
 private:
     e_bt_state bt_state;
+    uint8_t has_been_unallocated; //can't be relaunch after 
     BluetoothA2DPSink *a2dp_sink;
     char *bt_name;
 };
