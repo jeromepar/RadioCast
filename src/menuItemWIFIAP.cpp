@@ -114,16 +114,16 @@ void MenuItemWIFIAP::update()
         size_t ret_sz = EEPROM.writeByte(EEPROM_ADDR_ESPNAME_VALID, EEPROM_MAGIC_VALID);
         ESP_LOGD(TAG, "written %db", ret_sz);
 
-        ESP_LOGD(TAG, "radio LEN %db",  strnlen(BTnameParam->getValue(), MAX_LENGTH_BT_NAME));
-        ret_sz = EEPROM.writeBytes(EEPROM_ADDR_ESPNAME, BTnameParam->getValue(), strnlen(BTnameParam->getValue(), MAX_LENGTH_BT_NAME));
-        ESP_LOGD(TAG, "written %db", ret_sz);
+        ESP_LOGI(TAG, "radio LEN %db",  MAX(strlen(BTnameParam->getValue())+1, MAX_LENGTH_BT_NAME));
+        ret_sz = EEPROM.writeBytes(EEPROM_ADDR_ESPNAME, BTnameParam->getValue(), MAX(strlen(BTnameParam->getValue())+1, MAX_LENGTH_BT_NAME));
+        ESP_LOGI(TAG, "written %db", ret_sz);
 
         ESP_LOGD(TAG, "new Radio List %s", radioListParam->getValue());
         ret_sz = EEPROM.writeByte(EEPROM_ADDR_STATIONS_VALID, EEPROM_MAGIC_VALID);
         ESP_LOGD(TAG, "written %db", ret_sz);
-        int l = strnlen(radioListParam->getValue(), MAX_LENGTH_STATION_LIST);
+        int l = MAX(strlen(radioListParam->getValue())+1, MAX_LENGTH_STATION_LIST);
         ret_sz = EEPROM.writeInt(EEPROM_ADDR_STATIONS_LENGTH, l);
-        ESP_LOGD(TAG, "written %db", ret_sz);
+        ESP_LOGI(TAG, "written %db", ret_sz);
         ret_sz = EEPROM.writeBytes(EEPROM_ADDR_STATIONS, radioListParam->getValue(), l);
         ESP_LOGD(TAG, "written %db", ret_sz);
 

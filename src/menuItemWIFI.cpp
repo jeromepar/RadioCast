@@ -25,16 +25,14 @@ void parse_stations(char *radio_stations)
 {
     stations.empty();
 
-    
     int total_radio_length = strlen(radio_stations);
     char *in_str = radio_stations;
-    char radio_name[50];
-    char radio_url[200];
-
+    char *radio_name;
+    char *radio_url;
 
     while (true)
     {
-        if (in_str>=(radio_stations+total_radio_length))
+        if (in_str >= (radio_stations + total_radio_length))
         {
             break;
         }
@@ -45,16 +43,26 @@ void parse_stations(char *radio_stations)
         {
             ptr2ndComma = ptr1stComma + strlen(ptr1stComma);
         }
+
+        radio_name = (char*)malloc(50); //mus be new strings or we just memorize the same pointer
+        radio_url = (char*)malloc(200);
+
         strncpy(radio_name, in_str, MIN((ptr1stComma - in_str), 50));
         radio_name[MIN((ptr1stComma - in_str), 49)] = 0; // end string
-        strncpy(radio_url, ptr1stComma + 1, MIN((ptr2ndComma - ptr1stComma-1), 200));
-        radio_url[MIN((ptr2ndComma - ptr1stComma-1), 199)] = 0; // end string
+        strncpy(radio_url, ptr1stComma + 1, MIN((ptr2ndComma - ptr1stComma - 1), 200));
+        radio_url[MIN((ptr2ndComma - ptr1stComma - 1), 199)] = 0; // end string
 
         ESP_LOGI(TAG, "Found radio \"%s\" at \"%s\"", radio_name, radio_url);
         in_str = ptr2ndComma + 1;
 
-
         stations.push_back({radio_name, radio_url});
+    }
+
+    ESP_LOGI(TAG, "recap stations:\n");
+
+    for (const station &s : stations)
+    {
+        ESP_LOGI(TAG, "- \"%s\" at \"%s\"", s.name, s.url);
     }
 }
 
@@ -126,7 +134,7 @@ void audioProcessing(void *p)
         if (streamPlaying == false)
         {
             // new connection
-            ESP_LOGI(TAG, "new connection to %s at %s", stations[currentStationIndex].name, stations[currentStationIndex].url);
+            ESP_LOGI(TAG, "new connection at index %d, to %s at %s", currentStationIndex, stations[currentStationIndex].name, stations[currentStationIndex].url);
             wifi_instance->setInfo2((const uint8_t *)stations[currentStationIndex].name);
             wifi_instance->setInfo3((const uint8_t *)"buffering");
             bool success = wifi_instance->get_outStream()->connecttohost(stations[currentStationIndex].url); // May fail due to wrong host address, socket error or timeout

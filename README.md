@@ -17,7 +17,7 @@ pre-requisite: DualCore for performances, BT, Wifi
 
 | <!-- -->              | <!-- -->      |
 | -----------           | -----------   |
-| Microcontroller       | ESP32         |
+| Microcontroller       | ESP32-D0WD-V3 (revision v3.0)         |
 | Frequency             | 240MHz        |
 | Flash                 | 4MB           |
 | RAM                   | 320KB         |
@@ -86,10 +86,10 @@ Even though i properly desallocated booth I2S/WIFI/BT on menu exit, the bluetoot
 and if you free it (with .end(true)), you can't start it again.
 
 I found these options:
->-D BOARD_HAS_PSRAM
->-mfix-esp32-psram-cache-issue
->-D CONFIG_BT_ALLOCATION_FROM_SPIRAM_FIRST=1
->-D CONFIG_SPIRAM_CACHE_WORKAROUND=1
+>-D BOARD_HAS_PSRAM  
+>-mfix-esp32-psram-cache-issue  
+>-D CONFIG_BT_ALLOCATION_FROM_SPIRAM_FIRST=1  
+>-D CONFIG_SPIRAM_CACHE_WORKAROUND=1  
 enabling the use of PSRAM (ram extension through SPI) but you need a special board/extension board
 
 I used the solution from the "original" project (through define option *MY_ESP32_LACKS_SRAM*) and ordered an ESP32WROVER wich got a buildin 4Mo PSRAM

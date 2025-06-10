@@ -123,8 +123,9 @@ void setup()
     uint8_t is_BT_name_valid = (EEPROM.readByte(EEPROM_ADDR_ESPNAME_VALID) == EEPROM_MAGIC_VALID);
     if (is_BT_name_valid)
     {
-      ESP_LOGI(TAG, "found valid BT name in EEPROM");
       EEPROM.readBytes(EEPROM_ADDR_ESPNAME, bt_name, MAX_LENGTH_BT_NAME);
+      ESP_LOGI(TAG, "found valid BT name in EEPROM (%s)",bt_name);
+
     }
     else
     {
